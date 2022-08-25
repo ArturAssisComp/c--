@@ -1,0 +1,71 @@
+Version 1.0 [23/10/2022]
+
+General conventions:
+    Docs: 
+        - Function docstring convention checklist is represented below.
+                  Before writing any doc for a function, it is important to go 
+                  through the checklist below and ONLY write documentation about 
+                  the items that are relevant to the current function and that are 
+                  not trivial. For example, it is not necessary to write about 
+                  'output' for a function like "void sort(char[])" because that 
+                  function does not return anything as output. 
+                  
+                  ( ) - description              -> General description of the function;
+                  ( ) - error handling           -> Write about how this function handles errors. Does it return a special value that can not be a valid output? Or
+                                                    does it stop the execution and kill the current process?
+                  ( ) - memory allocation issues -> Write if the user must deallocate some memory allocated
+                                                    by this function;
+                  ( ) - output                   -> Write something important and nontrivial 
+                                                    about the outputs;
+                  ( ) - input                    -> Write something important and nontrivial about the 
+                                                    inputs;
+                  ( ) - use cases                -> Write about the use cases of this function;
+                  ( ) - usage examples           -> Give examples of how to use the function that is being
+                                                    designed.
+                  ( ) - security issues          -> If there is ANY security issue in the function,
+                                                    write about it;
+                  ( ) - performance issues       -> Write about possible performance issues that may
+                                                    be caused by the function. 
+                                                    Ex.: This function has time complexity O(len(input1)^2) 
+                                                    and memory complexity O(len(input2)); 
+
+        Code: 
+        - Comments in the block of code, if necessary, should be simple, concise, and they should describe 
+          each non-trivial block of code:
+          Ex.:
+                  //Block of code 1 does something:
+                    (implementation of block 1)
+                  
+                  //Block of code 2 does something else:
+                    (implementation of block 2)
+                    (...)
+
+    Naming convention:
+        - Functions and variable names: snake_case
+        - Constants: UPPER_SNAKE_CASE
+        - Each module must have public functions starting with the first 
+          letter of the name of the module separated by an underscore. 
+          The letters are capitalized. If conflict happens, use the 
+          first three letters from the last module created. 
+                  Ex.:  <module>     <function name>
+                         abc.h   ->   int A_sum(int, int)
+                         abcd.h   ->  int ABC_sub(int, int)
+        - Static functions (local functions, they are visible only within the current file)
+          must initialize with lower case letter.
+                  Ex.:  <module>     <function name>
+                         abc.h   ->   static int sum(int, int)
+                         abcd.h   ->  static int sub(int, int)
+
+    Design:
+        - Every function that accepts a struct as input must receive a 
+          pointer to that struct, not the struct itself.
+        - Goto may be used only for inner nested loop break;
+
+    Test:
+        - Unit test should be based on the following checklist: 
+                  ( ) - edge cases;
+                  ( ) - wrong inputs;
+                  ( ) - some cases for each class of equivalence;
+                  ( ) - arbitrary cases that the designer consider relevant;
+                  ( ) - white box test cases (avoid this situation, because it
+                        is dependent on the implementation); 
