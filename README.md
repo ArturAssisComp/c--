@@ -52,12 +52,33 @@ Run the following command in the terminal in the root directory of the c-- proje
 ```bash
 make
 ```  
-The compiled executables will be saved into the folder build.
+The compiled executable (named cmm) will be saved into the folder build.
+Usage: cmm <filename>
+or:    cmm
+Executing cmm without argument makes stdin to be the input.
 
 To clean, run:
 ```bash
 make clean
 ```
+
+## Testing
+
+Before testing, install the necessary files:
+```bash
+make install
+```  
+After installation, compile the test files and run them:
+```bash
+make test
+./build/test/*
+```  
+
+
+
+
+
+Before testing 
 # Requirements:
 
 flex-devel 2.6.4 
