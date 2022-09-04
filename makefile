@@ -1,11 +1,10 @@
-objects = src/scanner.o
+objects = src/scanner.o src/aux.o src/cmm.o
 LDFLAGS = -lfl
-LFLAGS  = --header-file=src/scanner.h 
 LEX     = flex
 CC      = gcc
 
 main: $(objects) build 
-	$(CC) -o build/scanner $(objects) $(LDFLAGS)
+	$(CC) -o build/cmm $(objects) $(LDFLAGS)
 
 build: 
 	mkdir build
@@ -20,4 +19,4 @@ src/scanner.c: src/scanner.l
 .PHONY: clean
 
 clean:
-	rm -fr build src/*.o src/scanner.c src/scanner.h
+	rm -fr build src/*.o src/scanner.c 
