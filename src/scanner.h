@@ -9,5 +9,6 @@ extern int yylineno;
 
 /* Function declaration */
 G_token_type S_get_token(void);
+void yyrestart(FILE *);
 
 #endif 

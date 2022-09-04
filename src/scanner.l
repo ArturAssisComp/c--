@@ -18,7 +18,7 @@ char S_token_string[S_MAX_TOKEN_LEN];
 NON_ZERO_DIGIT [1-9]
 DIGIT [0-9]
 NUMBER {NON_ZERO_DIGIT}{DIGIT}*
-ID    [a-z_][a-z0-9_]*
+ID    [A-Za-z_][A-Za-z0-9_]*
 
 %%
  /*Rules*/
