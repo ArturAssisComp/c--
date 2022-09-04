@@ -53,8 +53,11 @@ Run the following command in the terminal in the root directory of the c-- proje
 make
 ```  
 The compiled executable (named cmm) will be saved into the folder build.
-Usage: cmm <filename>
+
+Usage: cmm \<filename\>
+
 or:    cmm
+
 Executing cmm without argument makes stdin to be the input.
 
 To clean, run:
