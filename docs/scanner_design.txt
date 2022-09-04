@@ -1,0 +1,14 @@
+Requirements for the scanner:
+
+- The scanner will be implemented as a function to get each token;
+
+The regular grammar must recognize the following symbols and patterns:
+
+- Keywords:
+    if else int return void while
+- Special Symbols:
+    + - * / < <= > >= == != = ; , ( ) [ ] { } /* */
+- IDs: identifiers with letters, numbers, or _, initiated with letter or _
+- Numbers: one or more digits in such a way that the first is not 0;
+- Ignore whitespaces: tabs, blank space, and newline;
+- Comments: /* <comment content> */ which may include more than 1 line;
