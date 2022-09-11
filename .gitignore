@@ -1,5 +1,11 @@
+# External files
+ext/*
+
 # Build
 build/*
+
+# Automatically generated source files
+src/scanner.c
 
 # Prerequisites
 *.d
