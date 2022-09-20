@@ -2,6 +2,7 @@ objects = src/scanner.o src/aux.o src/cmm.o
 LDFLAGS = -lfl
 LEX     = flex
 CC      = gcc
+EXAMPLE_FILES = test/examples/mdc.c test/examples/sort.c test/examples/debug.c
 
 # Ctest variables:
 ctest_a     = ext/ctest_lib/lib/ctest.a
@@ -24,13 +25,20 @@ build_test: build
 	mkdir -p build/test
 
 
-.PHONY: clean test 
+.PHONY: clean test run_examples
 
 clean:
 	rm -fr build src/*.o test/*.o src/scanner.c 
 
 test: build_test $(objects) test/test_scanner.o
 	$(CC) -o build/test/test_scanner test/test_scanner.o src/aux.o $(ctest_a) src/scanner.o $(LDFLAGS)
+
+run_examples: main  
+	for file in $(EXAMPLE_FILES) ; do \
+		echo ;                        \
+	    echo "Executing" $${file} ;   \
+		build/cmm $${file} ;          \
+	done
 
 
 
