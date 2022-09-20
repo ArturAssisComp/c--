@@ -13,7 +13,7 @@
 typedef enum
 /* book-keeping tokens */
 {
-    ENDFILE,ERROR,
+    ENDFILE, ERROR, 
     /* reserved words */
     IF, ELSE, RETURN, VOID, WHILE, INT,
     /*...*/

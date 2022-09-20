@@ -10,7 +10,7 @@ void A_print_token( G_token_type token, const char* lexeme)
     switch (token)
     { 
         case ENDFILE: 
-            fprintf(G_listing,"EOF\n"); 
+            fprintf(G_listing,"ENDFILE\n"); 
             break;
         case ERROR:
             fprintf(G_listing,"ERROR: %s\n",lexeme);
