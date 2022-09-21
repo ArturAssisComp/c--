@@ -13,13 +13,16 @@
 typedef enum
 /* book-keeping tokens */
 {
-    ENDFILE,ERROR,
+    ENDFILE, ERROR, 
     /* reserved words */
+    IF, ELSE, RETURN, VOID, WHILE, INT,
     /*...*/
     /* multicharacter tokens */
-    ID,NUM
+    ID,NUM,
     /* special symbols */
     /*...*/
+    ASSIGN, EQ, NEQ, LT, LET, GT, GET, PLUS, MINUS, TIMES, OVER, 
+    LPAREN, RPAREN, SEMI, COMMA, LSQ_BRACKET, RSQ_BRACKET, LCU_BRACKET, RCU_BRACKET
 } G_token_type;
 
 
