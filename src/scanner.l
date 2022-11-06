@@ -8,6 +8,7 @@ used as template for the scanner for the C-- */
 #include "aux.h"
 #include "globals.h"
 #include "scanner.h"
+#include "parser.tab.h"
 
 char S_token_string[S_MAX_TOKEN_LEN];
 %}

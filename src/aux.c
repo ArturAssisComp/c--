@@ -1,5 +1,6 @@
 #include "aux.h"
 #include "globals.h"
+#include "parser.tab.h"
 
 
 /* A_print_token: prints 'token'

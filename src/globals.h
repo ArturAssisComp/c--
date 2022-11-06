@@ -9,22 +9,31 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-/*Types definition*/
-typedef enum
-/* book-keeping tokens */
-{
-    ENDFILE, ERROR, 
-    /* reserved words */
-    IF, ELSE, RETURN, VOID, WHILE, INT,
-    /*...*/
-    /* multicharacter tokens */
-    ID,NUM,
-    /* special symbols */
-    /*...*/
-    ASSIGN, EQ, NEQ, LT, LET, GT, GET, PLUS, MINUS, TIMES, OVER, 
-    LPAREN, RPAREN, SEMI, COMMA, LSQ_BRACKET, RSQ_BRACKET, LCU_BRACKET, RCU_BRACKET
-} G_token_type;
+#ifndef YYPARSER
 
+/* ENDFILE is implicitly defined by Yacc/Bison,
+ * and not included in the tab.h file
+ */
+#define ENDFILE 0
+
+#endif
+/*Types definition*/
+
+//typedef enum
+/* book-keeping tokens */
+//{
+//    ENDFILE, ERROR, 
+//    /* reserved words */
+//    IF, ELSE, RETURN, VOID, WHILE, INT,
+//    /*...*/
+//    /* multicharacter tokens */
+//    ID,NUM,
+//    /* special symbols */
+//    /*...*/
+//    ASSIGN, EQ, NEQ, LT, LET, GT, GET, PLUS, MINUS, TIMES, OVER, 
+//    LPAREN, RPAREN, SEMI, COMMA, LSQ_BRACKET, RSQ_BRACKET, LCU_BRACKET, RCU_BRACKET
+//} G_token_type;
+typedef int G_token_type;
 
 /*Global Variables*/
 extern FILE* G_source;  /* source code text file */
@@ -51,6 +60,8 @@ extern bool G_trace_scan;
 /* Error = true prevents further passes if an error occurs */
 extern bool G_error;
 
+//Syntax tree:
+typedef int G_tree_node; //Implement
 
 #endif
 
