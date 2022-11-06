@@ -6,6 +6,7 @@ build/*
 
 # Automatically generated source files
 src/scanner.c
+src/parser.tab.*
 
 # Prerequisites
 *.d
