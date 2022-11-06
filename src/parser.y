@@ -1,11 +1,11 @@
 %{
 #define YYPARSER /* distinguishes Yacc output from other code files */
 
+#include <stdbool.h>
 #include "globals.h"
-#include "util.h"
 #include "scanner.h"
 #include "parser.h"
-#include "stdbool.h"
+#include "aux.h"
 
 #define YYSTYPE G_tree_node *
 static char * saved_name; /* for use in assignments */
@@ -30,8 +30,8 @@ abc : ;
 
 int yyerror(char * message)
 { 
-    fprintf(listing,"Syntax error at line %d: %s\n",lineno,message);
-    fprintf(listing,"Current token: ");
+    fprintf(G_listing,"Syntax error at line %d: %s\n",G_lineno,message);
+    fprintf(G_listing,"Current token: ");
     A_print_token(yychar,S_token_string);
     G_error = true;
     return 0;

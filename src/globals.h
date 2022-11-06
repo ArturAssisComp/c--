@@ -19,20 +19,6 @@
 #endif
 /*Types definition*/
 
-//typedef enum
-/* book-keeping tokens */
-//{
-//    ENDFILE, ERROR, 
-//    /* reserved words */
-//    IF, ELSE, RETURN, VOID, WHILE, INT,
-//    /*...*/
-//    /* multicharacter tokens */
-//    ID,NUM,
-//    /* special symbols */
-//    /*...*/
-//    ASSIGN, EQ, NEQ, LT, LET, GT, GET, PLUS, MINUS, TIMES, OVER, 
-//    LPAREN, RPAREN, SEMI, COMMA, LSQ_BRACKET, RSQ_BRACKET, LCU_BRACKET, RCU_BRACKET
-//} G_token_type;
 typedef int G_token_type;
 
 /*Global Variables*/
@@ -56,9 +42,15 @@ extern bool G_echo_source;
  */
 extern bool G_trace_scan;
 
+/* trace_parse = true causes parsing information to be
+ * printed to the listing file. 
+ */
+extern bool G_trace_parse;
 
 /* Error = true prevents further passes if an error occurs */
 extern bool G_error;
+
+
 
 //Syntax tree:
 typedef int G_tree_node; //Implement
