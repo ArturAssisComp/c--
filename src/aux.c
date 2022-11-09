@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "aux.h"
 #include "globals.h"
 #include "parser.tab.h"
@@ -56,7 +57,25 @@ void A_print_token( G_token_type token, const char* lexeme)
             break;
     }
 }
-    /* special symbols */
-    /*...*/
-    // 
-    // 
+
+G_tree_node * A_new_stmt_node(G_stmt_type stmt_type)
+{
+    int i;
+    G_tree_node *t = malloc(sizeof *t);
+    if (t==NULL)
+    {
+        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
+        exit(EXIT_FAILURE);
+    }
+
+    for (i=0; i<MAXCHILDREN; i++) t->child[i] = NULL;
+
+    t->sibling = NULL;
+    t->node_type = G_STMT;
+    t->node_subtype.stmt = stmt_type;
+    t->lineno = G_lineno;
+    return t;
+}
+
+
+
