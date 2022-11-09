@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "aux.h"
 #include "globals.h"
 #include "parser.tab.h"
@@ -97,4 +98,19 @@ G_tree_node * A_new_exp_node(G_exp_type exp_type)
     return t;
 }
 
+char *A_copy_string(char *s)
+{
+    int n;
+    char * t;
+    if (s==NULL) return NULL;
+    n = strlen(s)+1;
+    t = malloc(n);
+    if (t==NULL)
+    {
+        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
+        exit(EXIT_FAILURE);
+    }
+    strncpy(t,s,n);
+    return t;
+}
 
