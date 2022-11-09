@@ -62,7 +62,7 @@ params          :   params_list
                     {}
                 ;
 
-params_list     :   params_list  param
+params_list     :   params_list COMMA  param
                     {}
                 |   param
                     {}
