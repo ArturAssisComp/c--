@@ -16,6 +16,11 @@
  */
 #define ENDFILE 0
 
+/*Define the maximum number of children that an
+ * abstract syntax tree may have.
+ */
+#define MAXCHILDREN 3
+
 #endif
 /*Types definition*/
 
@@ -53,7 +58,25 @@ extern bool G_error;
 
 
 //Syntax tree:
-typedef int G_tree_node; //Implement
+typedef enum {G_STMT,G_EXP} G_node_type;
+typedef enum {G_VAR_DCL, G_FUNC_DCL, G_IF, G_WHILE, G_RETURN, G_ASSIGNMENT} G_stmt_type;
+typedef enum {G_COMP, G_OP, G_FUNC_ACTV, G_CONST, G_ID} G_exp_type;
+
+/* ExpType is used for type checking */
+typedef enum {G_VOID, G_INT} G_type;
+
+
+typedef struct G_tree_node
+   { struct G_tree_node * child[MAXCHILDREN];
+     struct G_tree_node * sibling;
+     int lineno;
+     G_node_type node_type;
+     union { G_stmt_type stmt; G_exp_type exp;} node_subtype;
+     union { G_token_type op;
+             int val;
+             char * name; } attr;
+     G_type semantic_type; /* for type checking of exps */
+   } G_tree_node;
 
 #endif
 
