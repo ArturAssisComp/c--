@@ -78,6 +78,7 @@ G_token_type S_get_token(void)
     }
     current_token = yylex();
     strncpy(S_token_string,yytext,S_MAX_TOKEN_LEN);
+    G_lineno = yylineno;
     if (G_trace_scan) {
         fprintf(G_listing,"\t%d: ",yylineno);
         A_print_token(current_token,S_token_string);
