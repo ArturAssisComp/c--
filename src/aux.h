@@ -11,5 +11,25 @@
  */
 void A_print_token( G_token_type token, const char* lexeme);
 
+/* Function A_new_stmt_node creates a new statement
+ * node for syntax tree construction
+ */
+G_tree_node * A_new_stmt_node(G_stmt_type stmt_type);
+
+/* Function A_new_exp_node creates a new expression
+ * node for syntax tree construction
+ */
+G_tree_node * A_new_exp_node(G_exp_type exp_type);
+
+/* Function A_copy_string allocates and makes a new
+ * copy of an existing string
+ */
+char * A_copy_string( char * s);
+
+/* procedure A_print_tree prints a syntax tree to the
+ * listing file using indentation to indicate subtrees
+ */
+void A_print_tree( G_tree_node * root);
+
 
 #endif
