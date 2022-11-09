@@ -77,5 +77,24 @@ G_tree_node * A_new_stmt_node(G_stmt_type stmt_type)
     return t;
 }
 
+G_tree_node * A_new_exp_node(G_exp_type exp_type)
+{
+    int i;
+    G_tree_node *t = malloc(sizeof *t);
+    if (t==NULL)
+    {
+        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
+        exit(EXIT_FAILURE);
+    }
+
+    for (i=0; i<MAXCHILDREN; i++) t->child[i] = NULL;
+
+    t->sibling = NULL;
+    t->node_type = G_EXP;
+    t->node_subtype.exp= exp_type;
+    t->semantic_type = G_VOID;
+    t->lineno = G_lineno;
+    return t;
+}
 
 
