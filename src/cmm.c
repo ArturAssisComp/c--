@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include "aux.h"
 #include "globals.h"
 
 /* set NO_PARSE to true to get a scanner-only compiler */
@@ -70,7 +71,8 @@ int main(int argc, char *argv[])
 #else
   root = P_parse();
   if (G_trace_parse) {
-    fprintf(G_listing,"\nSyntax tree: (tree will be printed here...)\n");
+    fprintf(G_listing,"\nSyntax tree: \n");
+    A_print_tree(root);
   }
 #if !NO_ANALYZE
     if (!G_error)
