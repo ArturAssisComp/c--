@@ -37,11 +37,13 @@ clean:
 	rm -fr build src/*.o test/*.o src/scanner.c src/parser.tab.*
 
 test: build_test $(objects) test/test_scanner.o
-	$(CC) -o build/test/test_scanner test/test_scanner.o src/aux.o $(ctest_a) src/scanner.o $(LDFLAGS)
+	$(CC) -o build/test/test_scanner test/test_scanner.o src/aux.o $(ctest_a) src/scanner.o src/parser.tab.o $(LDFLAGS)
 
 run_examples: main  
 	for file in $(EXAMPLE_FILES) ; do \
 		echo ;                        \
+		echo "File Content" ;         \
+		cat $${file} ;                \
 	    echo "Executing" $${file} ;   \
 		build/cmm $${file} ;          \
 	done
