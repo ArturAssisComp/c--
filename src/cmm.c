@@ -39,7 +39,6 @@ bool G_echo_source = true;
 bool G_trace_scan  = true;
 bool G_trace_parse = true;
 bool G_error       = true;
-int G_lineno = 0;
 
 
 
@@ -72,7 +71,9 @@ int main(int argc, char *argv[])
   root = P_parse();
   if (G_trace_parse) {
     fprintf(G_listing,"\nSyntax tree: \n");
+    if (root == NULL) fprintf(G_listing, "<the tree is NULL>\n");
     A_print_tree(root);
+    fprintf(G_listing,"\n################################\n");
   }
 #if !NO_ANALYZE
     if (!G_error)

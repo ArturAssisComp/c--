@@ -2,6 +2,7 @@
 #include <string.h>
 #include "aux.h"
 #include "globals.h"
+#include "parser.h"
 #include "parser.tab.h"
 
 
@@ -75,6 +76,7 @@ G_tree_node * A_new_stmt_node(G_stmt_type stmt_type)
     t->node_type = G_STMT;
     t->node_subtype.stmt = stmt_type;
     t->lineno = G_lineno;
+    t->array_sz = -1;
     return t;
 }
 
@@ -94,6 +96,7 @@ G_tree_node * A_new_exp_node(G_exp_type exp_type)
     t->node_type = G_EXP;
     t->node_subtype.exp= exp_type;
     t->semantic_type = G_VOID;
+    t->array_sz = -1;
     t->lineno = G_lineno;
     return t;
 }
@@ -116,8 +119,8 @@ char *A_copy_string(char *s)
 
 static int indentno = 0;
 
-#define INDENT indentno+=2
-#define UNINDENT indentno-=2
+#define INDENT indentno+=4
+#define UNINDENT indentno-=4
 
 typedef enum {ROOT, CHILD, SIBLING}state;
 static state current_state = ROOT;
@@ -134,7 +137,7 @@ static char *semantic_type_to_str(G_type s_type)
             return "int";
             break;
         default:
-                return "INVALID TYPE";
+                return "INVALID SEMANTIC TYPE";
             break;
     }
 }
@@ -146,13 +149,13 @@ static void print_spaces(void)
     switch (current_state)
     {
         case ROOT:
-            fprintf(G_listing, " (r)");
+            fprintf(G_listing, "(r )");
             break;
         case CHILD:
             fprintf(G_listing, "(c%1d)", child_no);
             break;
         case SIBLING:
-            fprintf(G_listing, " (s)");
+            fprintf(G_listing, "(s )");
             break;
         default:
             break;
@@ -274,10 +277,12 @@ void A_print_tree( G_tree_node * root)
             switch (root->node_subtype.stmt) 
             {
                 case G_VAR_DCL:
-                  fprintf(G_listing,"DECLARE VAR %s OF TYPE %s\n", root->attr.name, semantic_type_to_str(root->semantic_type));
+                  if (root->array_sz == -1) fprintf(G_listing,"DECLARE VAR \"%s\" OF TYPE %s\n", root->attr.name, semantic_type_to_str(root->semantic_type));
+                  else if (root->array_sz > 0) fprintf(G_listing,"DECLARE ARRAY VAR \"%s\" OF TYPE %s AND SIZE %d\n", root->attr.name, semantic_type_to_str(root->semantic_type), root->array_sz); 
+                  else fprintf(G_listing, "Array with invalid size");
                   break;
                 case G_FUNC_DCL:
-                  fprintf(G_listing,"DECLARE FUNC %s OF TYPE %s\n", root->attr.name, semantic_type_to_str(root->semantic_type));
+                  fprintf(G_listing,"DECLARE FUNC \"%s\" OF TYPE %s\n", root->attr.name, semantic_type_to_str(root->semantic_type));
                   break;
                 case G_IF:
                   fprintf(G_listing,"IF\n");
@@ -289,7 +294,16 @@ void A_print_tree( G_tree_node * root)
                   fprintf(G_listing,"RETURN\n");
                   break;
                 case G_ASSIGNMENT:
-                  fprintf(G_listing,"ASSIGNMENT TO %s\n", root->attr.name);
+                  fprintf(G_listing,"ASSIGNMENT\n");
+                  break;
+                case G_PARAM:
+                  if (root->array_sz == -1) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s\n",root->attr.name, semantic_type_to_str(root->semantic_type));
+                  else if (root->array_sz == 0) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s[]\n",root->attr.name, semantic_type_to_str(root->semantic_type));
+                  else 
+                  {
+                      fprintf(G_listing,"Node corrupted\n");
+                      exit(EXIT_FAILURE);
+                  }
                   break;
                 default:
                   fprintf(G_listing,"Unknown ExpNode kind\n");
@@ -300,19 +314,22 @@ void A_print_tree( G_tree_node * root)
         { 
             switch (root->node_subtype.exp) {
                 case G_COMP:
-                  fprintf(G_listing,"COMPARISON OP: %s\n", get_basic_token_str(root->attr.op));
+                  fprintf(G_listing,"COMPARISON OP: \"%s\"\n", get_basic_token_str(root->attr.op));
                   break;
                 case G_OP:
-                  fprintf(G_listing,"ARITHMETIC OP: %s\n", get_basic_token_str(root->attr.op));
+                  fprintf(G_listing,"ARITHMETIC OP: \"%s\"\n", get_basic_token_str(root->attr.op));
                   break;
                 case G_FUNC_ACTV:
-                  fprintf(G_listing,"CALLING FUNC: %s\n", root->attr.name);
+                  fprintf(G_listing,"CALLING FUNC: \"%s\"\n", root->attr.name);
                   break;
                 case G_CONST:
                   fprintf(G_listing,"CONST: %d\n",root->attr.val);
                   break;
                 case G_ID:
-                  fprintf(G_listing,"ID: %s\n",root->attr.name);
+                  fprintf(G_listing,"ID: \"%s\"\n",root->attr.name);
+                  break;
+                case G_ARRAY_ID:
+                  fprintf(G_listing,"ARRAY ID: \"%s\"\n",root->attr.name);
                   break;
                 default:
                   fprintf(G_listing,"Unknown ExpNode kind\n");
@@ -329,6 +346,7 @@ void A_print_tree( G_tree_node * root)
         current_state = SIBLING;
         root = root->sibling;
     }
+
     UNINDENT;
     if (reset_root) current_state = ROOT;
 }
