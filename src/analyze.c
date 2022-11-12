@@ -1,8 +1,23 @@
 #include "symtab.h"
 #include "analyze.h"
+#include "aux.h"
 
 /* counter for variable memory locations */
 static int location = 0;
+
+/* scope variable of studied line */
+static char *scope = "";
+static int   scope_id = 0;
+
+static void add_scope(char* name) {
+    scope = strcat(scope, '$');
+    scope = strcat( scope, name);
+    scope = strcat( scope, atoi(++scope_id));
+}
+
+static char* remove_scope(char* scope) {
+    // TODO
+}
 
 /* Procedure traverse is a generic recursive 
  * syntax tree traversal routine:
@@ -16,10 +31,10 @@ static void traverse( G_tree_node * t,
   { pre_proc(t);
     { int i;
       for (i=0; i < MAXCHILDREN; i++)
-        traverse(t->child[i],preProc,postProc);
+        traverse(t->child[i],pre_proc,post_proc);
     }
     post_proc(t);
-    traverse(t->sibling,preProc,postProc);
+    traverse(t->sibling,pre_proc,post_proc);
   }
 }
 
@@ -36,18 +51,52 @@ static void null_proc(G_tree_node * t)
  * identifiers stored in t into 
  * the symbol table 
  */
-static void insertNode( G_tree_node * t)
+static void insert_node( G_tree_node * t)
 { switch (t->node_type)
   { case G_STMT:
       switch (t->node_subtype)
       { case G_ASSIGNMENT:
-        case G_VAR_DCL: 
+            if !(SYM_var_isin_within(t->child[0], scope)){
+                type_error(t, t->child[0]->attr.name);
+            }
+            break;
+        case G_VAR_DCL:
+            if (SYM_var_isin_exact(t, scope)){
+                type_error(t, t->attr.name);
+            } else if (SYM_fun_isin(t, scope)) {
+                type_error(t, t->attr.name);
+            } else {
+                SYM_row_entry e = SYM_create_entry(t, scope);
+                if( !SYM_add_definition_to_symbol_table(e) )
+                    // Nothing for instance
+            }
+            break;
         case G_FUNC_DCL:
+            if (strcmp(scope, '') || SYM_var_isin_exact(t, scope))
+                type_error(t, t->attr.name);
+            SYM_row_entry e = SYM_create_entry(t, scope);
+            SYM_add_definition_to_symbol_table(e);
+            add_scope(t->attr.name);
+            break;
         case G_IF:
+            // Em teoria não pode porque tem a expressão que não está no scope do if
+            add_scope(t->attr.name);
+            break;
         case G_WHILE:
-        case G_RETURN: 
-        case G_ASSIGNMENT:
+            add_scope(t->attr.name);
+            break;
+        case G_RETURN:
+            break;
         case G_PARAM:
+            if (SYM_var_isin_exact(t, scope)){
+                type_error(t, t->attr.name);
+            } else if (SYM_fun_isin(t, scope)) {
+                type_error(t, t->attr.name);
+            } else {
+                SYM_row_entry e = SYM_create_entry(t, scope);
+                SYM_add_definition_to_symbol_table(e);
+            }
+            break;
         default:
           break;
       }
@@ -63,18 +112,32 @@ static void insertNode( G_tree_node * t)
     //          add line number of use only */ 
     //         st_insert(t->attr.name,t->lineno,0);
     //       break;
-        case G_COMP:
-        case G_OP:
         case G_FUNC_ACTV:
-        case G_CONST:
+            if !(SYM_fun_isin(t, scope)) {
+                type_error(t, t->attr.name);
+            else {
+                SYM_insert_line_occurrence_into_symbol_table(t->attr.name, scope, )
+            }
+            break;
         case G_ID:
         case G_ARRAY_ID:
+            if (SYM_fun_isin(t, scope)) {
+                type_error(t, t->attr.name);
+            else if !(SYM_var_isin_within(t, scope)) {
+                type_error(t, t->attr.name);
+            } else {
+                SYM_insert_line_occurrence_into_symbol_table(t->attr.name, scope, )
+            }
+            break;
+        case G_COMP: // Ok
+        case G_OP: // Ok
+        case G_CONST: // OK
         default:
-          break;
+            break;
       }
-      break;
+        break;
     default:
-      break;
+        break;
   }
 }
 
@@ -82,7 +145,7 @@ static void insertNode( G_tree_node * t)
  * table by preorder traversal of the syntax tree
  */
 void build_symtab(G_tree_node * syntaxTree)
-{ traverse(syntaxTree,insertNode,nullProc);
+{ traverse(syntaxTree,insert_node,null_proc);
   if (TraceAnalyze)
   { fprintf(listing,"\nSymbol table:\n\n");
     printSymTab(listing);
@@ -163,6 +226,6 @@ static void check_node(G_tree_node * t)
 /* Procedure typeCheck performs type checking 
  * by a postorder syntax tree traversal
  */
-void typeCheck(G_tree_node * syntax_tree)
+void type_check(G_tree_node * syntax_tree)
 { traverse(syntax_tree,nullProc,checkNode);
 }

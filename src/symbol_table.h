@@ -47,7 +47,7 @@ bool SYM_add_definition_to_symbol_table( SYM_row_entry row_entr);
 /* Function SYM_is_into_table_within_scope returns true if the entry with name 'name' is into the table
  * within the scope 'scope' and false otherwise. 
  */
-bool SYM_is_into_table_within_scope ( char * name, char *scope );
+bool SYM_is_into_table_within_scope ( G_tree_node* name, char *scope );
 
 /* Procedure SYM_print_symbol_table prints a formatted
  * listing of the symbol table contents
@@ -55,6 +55,10 @@ bool SYM_is_into_table_within_scope ( char * name, char *scope );
  */
 void SYM_print_symbol_table(FILE * listing);
 
-
+SYM_row_entry SYM_create_entry(G_tree_node* t, char* scope)
+// SYM_row_entry e = {.name = A_copy_string(t->attr.name), 
+//                                    .scope = A_copy_string(scope),
+//                                    .lineno = t->lineno,
+//                                    .};
 
 #endif
