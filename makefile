@@ -4,7 +4,7 @@ PFLAGS  = -d
 PARSER  = bison
 LEX     = flex
 CC      = gcc
-EXAMPLE_FILES = test/examples/mdc.c test/examples/sort.c test/examples/debug.c
+EXAMPLE_FILES = test/examples/* 
 
 # Ctest variables:
 ctest_a     = ext/ctest_lib/lib/ctest.a
@@ -42,7 +42,7 @@ test: build_test $(objects) test/test_scanner.o
 run_examples: main  
 	for file in $(EXAMPLE_FILES) ; do \
 		echo ;                        \
-		echo "File Content" ;         \
+		echo "File" $${file} ;         \
 		cat $${file} ;                \
 	    echo "Executing" $${file} ;   \
 		build/cmm $${file} ;          \
