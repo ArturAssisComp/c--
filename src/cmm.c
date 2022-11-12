@@ -1,8 +1,35 @@
 /*Main for the compiler C--*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include "aux.h"
 #include "globals.h"
+
+/* set NO_PARSE to true to get a scanner-only compiler */
+#define NO_PARSE false 
+/* set NO_ANALYZE to true to get a parser-only compiler */
+#define NO_ANALYZE true 
+
+/* set NO_CODE to true to get a compiler that does not
+ * generate code
+ */
+#define NO_CODE true 
+
+#if NO_PARSE
 #include "scanner.h"
+#else
+#include "parser.h"
+#if !NO_ANALYZE
+#include "analyze.h"
+#if !NO_CODE
+#include "cgen.h"
+#endif
+#endif
+#endif
+
+#define MAX_FILENAME 120
+
 
 /*Define the global variables declared in the globals.h*/
 FILE* G_source;  /* source code text file */
@@ -10,14 +37,21 @@ FILE* G_listing; /* listing output text file */
 FILE* G_code;    /* code text file */
 bool G_echo_source = true;
 bool G_trace_scan  = true;
+bool G_trace_parse = true;
 bool G_error       = true;
+
+
 
 int main(int argc, char *argv[])
 {
+    G_tree_node *root;
+    char source_filename[MAX_FILENAME]; 
+    strncpy(source_filename, argv[1], MAX_FILENAME) ;
     if(argc == 1) G_source = stdin;
     else if (argc == 2) 
     {
-        G_source = fopen(argv[1], "r");
+
+        G_source = fopen(source_filename, "r");
         if(!G_source)
         {
             perror("fopen");
@@ -31,8 +65,30 @@ int main(int argc, char *argv[])
     }
 
     G_listing = stdout;
+#if NO_PARSE
     while(S_get_token() != ENDFILE);
+#else
+  root = P_parse();
+  if (G_trace_parse) {
+    fprintf(G_listing,"\nSyntax tree: \n");
+    if (root == NULL) fprintf(G_listing, "<the tree is NULL>\n");
+    A_print_tree(root);
+    fprintf(G_listing,"\n################################\n");
+  }
+#if !NO_ANALYZE
+    if (!G_error)
+    { 
+        ;
+    }
+#if !NO_CODE
+    if (! G_error)
+    { 
+        ;
+    }
+#endif
+#endif
+#endif
 
+    fclose(G_source);
     return 0;
 }
-

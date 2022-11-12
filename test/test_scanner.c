@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "../src/globals.h"
 #include "../src/scanner.h"
+#include "../src/parser.tab.h"
 
 #define MSG_SIZE 100
 

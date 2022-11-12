@@ -1,8 +1,10 @@
-objects = src/scanner.o src/aux.o src/cmm.o
+objects = src/scanner.o src/parser.tab.o src/aux.o src/cmm.o
 LDFLAGS = -lfl
+PFLAGS  = -d
+PARSER  = bison
 LEX     = flex
 CC      = gcc
-EXAMPLE_FILES = test/examples/mdc.c test/examples/sort.c test/examples/debug.c
+EXAMPLE_FILES = test/examples/* 
 
 # Ctest variables:
 ctest_a     = ext/ctest_lib/lib/ctest.a
@@ -15,11 +17,15 @@ main: $(objects) build
 build: 
 	mkdir build
 
-src/scanner.o: src/scanner.c 
-	$(CC) $(CFLAGS) -o $@ -c $^
+src/scanner.o: src/scanner.c src/parser.tab.c
+	$(CC) $(CFLAGS) -o $@ -c src/scanner.c
 
 src/scanner.c: src/scanner.l
 	$(LEX) $(LFLAGS) -o $@ $^
+
+src/parser.tab.c: src/parser.y
+	$(PARSER) $(PFLAGS) -o $@ $^
+
 
 build_test: build
 	mkdir -p build/test
@@ -28,14 +34,16 @@ build_test: build
 .PHONY: clean test run_examples
 
 clean:
-	rm -fr build src/*.o test/*.o src/scanner.c 
+	rm -fr build src/*.o test/*.o src/scanner.c src/parser.tab.*
 
 test: build_test $(objects) test/test_scanner.o
-	$(CC) -o build/test/test_scanner test/test_scanner.o src/aux.o $(ctest_a) src/scanner.o $(LDFLAGS)
+	$(CC) -o build/test/test_scanner test/test_scanner.o src/aux.o $(ctest_a) src/scanner.o src/parser.tab.o $(LDFLAGS)
 
 run_examples: main  
 	for file in $(EXAMPLE_FILES) ; do \
 		echo ;                        \
+		echo "File" $${file} ;         \
+		cat $${file} ;                \
 	    echo "Executing" $${file} ;   \
 		build/cmm $${file} ;          \
 	done
