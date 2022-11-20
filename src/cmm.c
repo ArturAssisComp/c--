@@ -9,7 +9,7 @@
 /* set NO_PARSE to true to get a scanner-only compiler */
 #define NO_PARSE false 
 /* set NO_ANALYZE to true to get a parser-only compiler */
-#define NO_ANALYZE true 
+#define NO_ANALYZE false 
 
 /* set NO_CODE to true to get a compiler that does not
  * generate code
@@ -38,6 +38,7 @@ FILE* G_code;    /* code text file */
 bool G_echo_source = true;
 bool G_trace_scan  = true;
 bool G_trace_parse = true;
+bool G_trace_analyze = true;
 bool G_error       = true;
 
 
@@ -76,6 +77,13 @@ int main(int argc, char *argv[])
     fprintf(G_listing,"\n################################\n");
   }
 #if !NO_ANALYZE
+  ANA_set_syntax_tree_scope(root);
+  if (G_trace_analyze) {
+    fprintf(G_listing,"\nSyntax tree (with scope and type): \n");
+    if (root == NULL) fprintf(G_listing, "<the tree is NULL>\n");
+    A_print_complete_tree(root);
+    fprintf(G_listing,"\n################################\n");
+  }
     if (!G_error)
     { 
         ;
