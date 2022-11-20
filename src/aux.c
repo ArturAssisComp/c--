@@ -284,6 +284,9 @@ void A_print_tree( G_tree_node * root)
                 case G_FUNC_DCL:
                   fprintf(G_listing,"DECLARE FUNC \"%s\" OF TYPE %s\n", root->attr.name, semantic_type_to_str(root->semantic_type));
                   break;
+                case G_BLOCK:
+                  fprintf(G_listing,"BLOCK\n");
+                  break;
                 case G_IF:
                   fprintf(G_listing,"IF\n");
                   break;
