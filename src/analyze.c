@@ -1,29 +1,159 @@
-#include "symtab.h"
+#include <stdlib.h>
+#include <string.h>
+//#include "symtab.h"
 #include "analyze.h"
 #include "aux.h"
 
-/* counter for variable memory locations */
-static int location = 0;
-
 /* scope variable of studied line */
-static char *scope = "";
 static int   scope_id = 0;
 
-static void add_scope(char* name) {
-    scope = strcat(scope, '$');
-    scope = strcat( scope, name);
-    scope = strcat( scope, atoi(++scope_id));
+static char *append_to_scope(char *scope, char* name) {
+    char *result;
+    size_t sz = strlen(scope) + strlen(name) + snprintf(NULL, 0, "%d", scope_id + 1) + 3;
+    result = calloc(sz, sizeof *result);
+    if (!result)
+    {
+        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
+        exit(EXIT_FAILURE);
+    }
+
+    result[0] = '\0';
+    snprintf(result, sz, "%s$%s%%%d", scope, name, ++scope_id);
+    return result;
 }
 
-static char* remove_scope(char* scope) {
-    // TODO
+static char *remove_scope(char* scope) {
+    char *result;
+    size_t i;
+    for(i = strlen(scope) - 1; i >= 0; i--)
+    {
+        if (scope[i] == '$') break;
+    }
+    size_t sz = i + 1;
+    result = calloc(sz, sizeof *result);
+    if (!result)
+    {
+        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
+        exit(EXIT_FAILURE);
+    }
+
+    result[0] = '\0';
+    strncpy(result, scope, i);
+    result[i] = '\0';
+    return result;
 }
+
+
+static void traverse_to_define_scope(G_tree_node *t, char *scope)
+{
+    int i;
+    char *aux_scope = NULL, *tmp = NULL;
+    if (t)
+    {
+        if (t->node_type == G_STMT)
+        { 
+            switch (t->node_subtype.stmt) 
+            {
+                case G_VAR_DCL:
+                    t->scope = A_copy_string(scope);                    
+                    break;
+                case G_FUNC_DCL:
+                    tmp = A_copy_string(scope);
+                    aux_scope = append_to_scope(scope, t->attr.name);
+                    free(tmp);
+                    t->scope = aux_scope;                    
+                    aux_scope = NULL;
+                    tmp = NULL;
+                    traverse_to_define_scope(t->child[0], t->scope);
+                    traverse_to_define_scope(t->child[1], t->scope);
+                    break;
+                case G_BLOCK:
+                    tmp = A_copy_string(scope);
+                    aux_scope = append_to_scope(scope, "BLOCK");
+                    free(tmp);
+                    t->scope = aux_scope;                    
+                    aux_scope = NULL;
+                    tmp = NULL;
+                    traverse_to_define_scope(t->child[0], t->scope);
+                    break;
+                case G_IF:
+                    tmp = A_copy_string(scope);
+                    aux_scope = append_to_scope(scope, "IF");
+                    free(tmp);
+                    t->scope = aux_scope;                    
+                    aux_scope = NULL;
+                    tmp = NULL;
+                    traverse_to_define_scope(t->child[0], scope);
+                    traverse_to_define_scope(t->child[1], t->scope);
+                    traverse_to_define_scope(t->child[2], t->scope);
+                    break;
+                case G_WHILE:
+                    tmp = A_copy_string(scope);
+                    aux_scope = append_to_scope(scope, "WHILE");
+                    free(tmp);
+                    t->scope = aux_scope;                    
+                    aux_scope = NULL;
+                    tmp = NULL;
+                    traverse_to_define_scope(t->child[0], scope);
+                    traverse_to_define_scope(t->child[1], t->scope);
+                    break;
+                case G_RETURN:
+                    traverse_to_define_scope(t->child[0], scope);
+                    break;
+                case G_ASSIGNMENT:
+                    traverse_to_define_scope(t->child[0], scope);
+                    traverse_to_define_scope(t->child[1], scope);
+                    break;
+                case G_PARAM:
+                    t->scope = A_copy_string(scope);                    
+                    break;
+                default:
+                    fprintf(G_listing,"Unknown ExpNode kind\n");
+                    break;
+            }
+        }
+        else if (t->node_type == G_EXP)
+        { 
+            switch (t->node_subtype.exp) {
+                case G_COMP:
+                    traverse_to_define_scope(t->child[0], scope);
+                    traverse_to_define_scope(t->child[1], scope);
+                    break;
+                case G_OP:
+                    traverse_to_define_scope(t->child[0], scope);
+                    traverse_to_define_scope(t->child[1], scope);
+                    break;
+                case G_FUNC_ACTV:
+                    t->scope = A_copy_string(scope);                    
+                    traverse_to_define_scope(t->child[0], scope);
+                    break;
+                case G_CONST:
+                    break;
+                case G_ID:
+                    t->scope = A_copy_string(scope);                    
+                    break;
+                case G_ARRAY_ID:
+                    t->scope = A_copy_string(scope);                    
+                    break;
+                default:
+                    fprintf(G_listing,"Unknown ExpNode kind\n");
+                    break;
+          }
+        }
+        else fprintf(G_listing,"INVALID NODE\n");
+
+        traverse_to_define_scope(t->sibling, scope);
+    }
+}
+
+
 
 /* Procedure traverse is a generic recursive 
  * syntax tree traversal routine:
  * it applies preProc in preorder and postProc 
  * in postorder to tree pointed to by t
  */
+/*
 static void traverse( G_tree_node * t,
                void (* pre_proc) (G_tree_node *),
                void (* post_proc) (G_tree_node *) )
@@ -37,79 +167,83 @@ static void traverse( G_tree_node * t,
     traverse(t->sibling,pre_proc,post_proc);
   }
 }
+*/
 
 /* nullProc is a do-nothing procedure to 
  * generate preorder-only or postorder-only
  * traversals from traverse
  */
+/*
 static void null_proc(G_tree_node * t)
 { if (t==NULL) return;
   else return;
 }
+*/
 
 /* Procedure insertNode inserts 
  * identifiers stored in t into 
  * the symbol table 
  */
+/*************************************************************
 static void insert_node( G_tree_node * t)
-{ switch (t->node_type)
-  { case G_STMT:
-      switch (t->node_subtype)
-      { case G_ASSIGNMENT:
-            if !(SYM_var_isin_within(t->child[0], scope)){
-                type_error(t, t->child[0]->attr.name);
+{ 
+    switch (t->node_type)
+    { 
+        case G_STMT:
+            switch (t->node_subtype)
+            { 
+                case G_ASSIGNMENT:
+                    if !(SYM_var_isin_within(t->child[0], scope)){
+                      type_error(t, t->child[0]->attr.name);
+                  }
+                  break;
+              case G_VAR_DCL:
+                  if (SYM_var_isin_exact(t, scope)){
+                      type_error(t, t->attr.name);
+                  } else if (SYM_fun_isin(t, scope)) {
+                      type_error(t, t->attr.name);
+                  } else {
+                      SYM_row_entry e = SYM_create_entry(t, scope);
+                      if( !SYM_add_definition_to_symbol_table(e) )
+                          // Nothing for instance
+                  }
+                  break;
+              case G_FUNC_DCL:
+                  if (strcmp(scope, '') || SYM_var_isin_exact(t, scope))
+                      type_error(t, t->attr.name);
+                  SYM_row_entry e = SYM_create_entry(t, scope);
+                  SYM_add_definition_to_symbol_table(e);
+                  append_to_scope(t->attr.name);
+                  break;
+              case G_IF:
+                  // Em teoria não pode porque tem a expressão que não está no scope do if
+                  append_to_scope(t->attr.name);
+                  break;
+              case G_WHILE:
+                  append_to_scope(t->attr.name);
+                  break;
+              case G_RETURN:
+                  break;
+              case G_PARAM:
+                  if (SYM_var_isin_exact(t, scope)){
+                      type_error(t, t->attr.name);
+                  } else if (SYM_fun_isin(t, scope)) {
+                      type_error(t, t->attr.name);
+                  } else {
+                      SYM_row_entry e = SYM_create_entry(t, scope);
+                      SYM_add_definition_to_symbol_table(e);
+                  }
+                  break;
+              default:
+                break;
             }
-            break;
-        case G_VAR_DCL:
-            if (SYM_var_isin_exact(t, scope)){
-                type_error(t, t->attr.name);
-            } else if (SYM_fun_isin(t, scope)) {
-                type_error(t, t->attr.name);
-            } else {
-                SYM_row_entry e = SYM_create_entry(t, scope);
-                if( !SYM_add_definition_to_symbol_table(e) )
-                    // Nothing for instance
-            }
-            break;
-        case G_FUNC_DCL:
-            if (strcmp(scope, '') || SYM_var_isin_exact(t, scope))
-                type_error(t, t->attr.name);
-            SYM_row_entry e = SYM_create_entry(t, scope);
-            SYM_add_definition_to_symbol_table(e);
-            add_scope(t->attr.name);
-            break;
-        case G_IF:
-            // Em teoria não pode porque tem a expressão que não está no scope do if
-            add_scope(t->attr.name);
-            break;
-        case G_WHILE:
-            add_scope(t->attr.name);
-            break;
-        case G_RETURN:
-            break;
-        case G_PARAM:
-            if (SYM_var_isin_exact(t, scope)){
-                type_error(t, t->attr.name);
-            } else if (SYM_fun_isin(t, scope)) {
-                type_error(t, t->attr.name);
-            } else {
-                SYM_row_entry e = SYM_create_entry(t, scope);
-                SYM_add_definition_to_symbol_table(e);
-            }
-            break;
-        default:
-          break;
-      }
       break;
     case G_EXP:
       switch (t->node_subtype)
       { //case IdK:
     //       if (st_lookup(t->attr.name) == -1)
-    //       /* not yet in table, so treat as new definition */
     //         st_insert(t->attr.name,t->lineno,location++);
     //       else
-    //       /* already in table, so ignore location, 
-    //          add line number of use only */ 
     //         st_insert(t->attr.name,t->lineno,0);
     //       break;
         case G_FUNC_ACTV:
@@ -140,10 +274,19 @@ static void insert_node( G_tree_node * t)
         break;
   }
 }
+*************************************************************/
+
+void ANA_set_syntax_tree_scope(G_tree_node *root)
+{
+    char *t = A_copy_string("GLOBAL%0");
+    scope_id = 0;
+    traverse_to_define_scope(root, t);
+}
 
 /* Function buildSymtab constructs the symbol 
  * table by preorder traversal of the syntax tree
  */
+/*
 void build_symtab(G_tree_node * syntaxTree)
 { traverse(syntaxTree,insert_node,null_proc);
   if (TraceAnalyze)
@@ -151,15 +294,19 @@ void build_symtab(G_tree_node * syntaxTree)
     printSymTab(listing);
   }
 }
+*/
 
+/*
 static void type_error(G_tree_node * t, char * message)
-{ fprintf(listing,"Type error at line %d: %s\n",t->lineno,message);
-  Error = TRUE;
+{ fprintf(G_listing,"Type error at line %d: %s\n",t->lineno,message);
+  G_error = true;
 }
+*/
 
 /* Procedure checkNode performs
  * type checking at a single tree node
  */
+/*
 static void check_node(G_tree_node * t)
 { switch (t->node_type)
   { case G_EXP:
@@ -211,7 +358,6 @@ static void check_node(G_tree_node * t)
         case G_IF:
         case G_WHILE:
         case G_RETURN: 
-        case G_ASSIGNMENT:
         case G_PARAM:
         default:
           break;
@@ -222,10 +368,13 @@ static void check_node(G_tree_node * t)
 
   }
 }
+*/
 
 /* Procedure typeCheck performs type checking 
  * by a postorder syntax tree traversal
  */
+/*
 void type_check(G_tree_node * syntax_tree)
-{ traverse(syntax_tree,nullProc,checkNode);
+{ traverse(syntax_tree,null_proc,check_node);
 }
+*/

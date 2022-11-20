@@ -13,4 +13,6 @@ void ANA_build_symtab(G_tree_node *);
  */
 void ANA_type_check(G_tree_node *);
 
+
+void ANA_set_syntax_tree_scope(G_tree_node *root);
 #endif
