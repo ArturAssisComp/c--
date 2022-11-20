@@ -4,5 +4,6 @@ int main(void)
   int a;
   a = 2 + 3;
   foo(bar(i + 1 + 2 / 3 - abc), 1 + 2);
+  {int b; b = 3;}
   return 1;
 }
