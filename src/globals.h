@@ -73,7 +73,7 @@ typedef union {
     int int_val;
 }G_num; 
 typedef enum {G_STMT,G_EXP} G_node_type;
-typedef enum {G_VAR_DCL, G_FUNC_DCL, G_IF, G_WHILE, G_RETURN, G_ASSIGNMENT, G_PARAM} G_stmt_type;
+typedef enum {G_VAR_DCL, G_FUNC_DCL, G_BLOCK, G_IF, G_WHILE, G_RETURN, G_ASSIGNMENT, G_PARAM} G_stmt_type;
 typedef enum {G_COMP, G_OP, G_FUNC_ACTV, G_CONST, G_ID, G_ARRAY_ID} G_exp_type;
 
 /* ExpType is used for type checking */
