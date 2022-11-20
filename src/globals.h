@@ -53,6 +53,11 @@ extern bool G_trace_scan;
  */
 extern bool G_trace_parse;
 
+/* trace_analyze = true causes semantic analysis information to be
+ * printed to the listing file. 
+ */
+extern bool G_trace_analyze;
+
 /* Error = true prevents further passes if an error occurs */
 extern bool G_error;
 
@@ -87,6 +92,7 @@ typedef struct G_tree_node
                char * name; } attr;
        G_type semantic_type; /* for type checking of exps */
        int array_sz; // -1 is default, 0 if [] and >0 otherwise.
+       char *scope; //This member will be used during semantic analysis
    } G_tree_node;
 
 #endif
