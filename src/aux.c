@@ -351,15 +351,19 @@ void A_print_tree( G_tree_node * root)
     }
 
     UNINDENT;
-    if (reset_root) current_state = ROOT;
+    if (reset_root) 
+    {
+        current_state = ROOT;
+        indentno = 0;
+    }
 }
 
 
-/* procedure A_print_tree_complete prints a syntax tree with some semantic 
+/* procedure A_print_complete_tree prints a syntax tree with some semantic 
  * information (scope and type) to the G_listing file using indentation to indicate 
  * subtrees
  */
-void A_print_tree_complete( G_tree_node * root)
+void A_print_complete_tree( G_tree_node * root)
 { 
     bool reset_root = false;
     int i;
@@ -373,18 +377,21 @@ void A_print_tree_complete( G_tree_node * root)
             switch (root->node_subtype.stmt) 
             {
                 case G_VAR_DCL:
-                  if (root->array_sz == -1) fprintf(G_listing,"DECLARE VAR \"%s\" OF TYPE %s\n", root->attr.name, semantic_type_to_str(root->semantic_type));
-                  else if (root->array_sz > 0) fprintf(G_listing,"DECLARE ARRAY VAR \"%s\" OF TYPE %s AND SIZE %d\n", root->attr.name, semantic_type_to_str(root->semantic_type), root->array_sz); 
+                  if (root->array_sz == -1) fprintf(G_listing,"DECLARE VAR \"%s\" OF TYPE %s (scope: %s)\n", root->attr.name, semantic_type_to_str(root->semantic_type), root->scope);
+                  else if (root->array_sz > 0) fprintf(G_listing,"DECLARE ARRAY VAR \"%s\" OF TYPE %s AND SIZE %d (scope: %s)\n", root->attr.name, semantic_type_to_str(root->semantic_type), root->array_sz, root->scope); 
                   else fprintf(G_listing, "Array with invalid size");
                   break;
                 case G_FUNC_DCL:
-                  fprintf(G_listing,"DECLARE FUNC \"%s\" OF TYPE %s\n", root->attr.name, semantic_type_to_str(root->semantic_type));
+                  fprintf(G_listing,"DECLARE FUNC \"%s\" OF TYPE %s (scope: %s)\n", root->attr.name, semantic_type_to_str(root->semantic_type), root->scope);
+                  break;
+                case G_BLOCK:
+                  fprintf(G_listing,"BLOCK (scope: %s)\n", root->scope);
                   break;
                 case G_IF:
-                  fprintf(G_listing,"IF\n");
+                  fprintf(G_listing,"IF (scope: %s)\n", root->scope);
                   break;
                 case G_WHILE:
-                  fprintf(G_listing,"WHILE\n");
+                  fprintf(G_listing,"WHILE (scope: %s)\n", root->scope);
                   break;
                 case G_RETURN:
                   fprintf(G_listing,"RETURN\n");
@@ -393,8 +400,8 @@ void A_print_tree_complete( G_tree_node * root)
                   fprintf(G_listing,"ASSIGNMENT\n");
                   break;
                 case G_PARAM:
-                  if (root->array_sz == -1) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s\n",root->attr.name, semantic_type_to_str(root->semantic_type));
-                  else if (root->array_sz == 0) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s[]\n",root->attr.name, semantic_type_to_str(root->semantic_type));
+                  if (root->array_sz == -1) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s (scope: %s)\n",root->attr.name, semantic_type_to_str(root->semantic_type), root->scope);
+                  else if (root->array_sz == 0) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s[] (scope: %s)\n",root->attr.name, semantic_type_to_str(root->semantic_type), root->scope);
                   else 
                   {
                       fprintf(G_listing,"Node corrupted\n");
@@ -416,16 +423,16 @@ void A_print_tree_complete( G_tree_node * root)
                   fprintf(G_listing,"ARITHMETIC OP: \"%s\"\n", get_basic_token_str(root->attr.op));
                   break;
                 case G_FUNC_ACTV:
-                  fprintf(G_listing,"CALLING FUNC: \"%s\"\n", root->attr.name);
+                  fprintf(G_listing,"CALLING FUNC: \"%s\" (scope: %s)\n", root->attr.name, root->scope);
                   break;
                 case G_CONST:
                   fprintf(G_listing,"CONST: %d\n",root->attr.val);
                   break;
                 case G_ID:
-                  fprintf(G_listing,"ID: \"%s\"\n",root->attr.name);
+                  fprintf(G_listing,"ID: \"%s\" (scope: %s)\n",root->attr.name, root->scope);
                   break;
                 case G_ARRAY_ID:
-                  fprintf(G_listing,"ARRAY ID: \"%s\"\n",root->attr.name);
+                  fprintf(G_listing,"ARRAY ID: \"%s\" (scope: %s)\n",root->attr.name, root->scope);
                   break;
                 default:
                   fprintf(G_listing,"Unknown ExpNode kind\n");
@@ -437,14 +444,18 @@ void A_print_tree_complete( G_tree_node * root)
         {
             child_no = i;
             current_state = CHILD;
-            A_print_tree(root->child[i]);
+            A_print_complete_tree(root->child[i]);
         }
         current_state = SIBLING;
         root = root->sibling;
     }
 
     UNINDENT;
-    if (reset_root) current_state = ROOT;
+    if (reset_root) 
+    {
+        current_state = ROOT;
+        indentno = 0;
+    }
 }
 
 

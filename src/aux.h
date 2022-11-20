@@ -32,4 +32,12 @@ char * A_copy_string( char * s);
 void A_print_tree( G_tree_node * root);
 
 
+
+/* procedure A_print_complete_tree prints a syntax tree with some semantic 
+ * information (scope and type) to the G_listing file using indentation to indicate 
+ * subtrees
+ */
+void A_print_complete_tree( G_tree_node * root);
+
+
 #endif
