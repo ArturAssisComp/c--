@@ -31,7 +31,7 @@ int yyerror(char *s);
 }
  
 %nterm <t_node> arg_list exp args activation factor term sum_exp simple_exp var 
-%nterm <t_node> return_decl stmt iter_decl select_decl exp_decl stmt_list local_decl
+%nterm <t_node> return_decl restrict_stmt stmt iter_decl select_decl exp_decl stmt_list local_decl
 %nterm <t_node> var_decl compound_decl param params_list params fun_decl decl decl_list
 %nterm <tkn_type> mult sum relational
 %nterm <semantic_type> spec_type
@@ -195,6 +195,21 @@ stmt_list       :   stmt_list stmt
 stmt            :   exp_decl
                     {}
                 |   compound_decl
+                    {
+                        $$ = A_new_stmt_node(G_BLOCK);
+                        $$->child[0]     = $1;
+                    }
+                |   select_decl
+                    {}
+                |   iter_decl
+                    {}
+                |   return_decl
+                    {}
+                ;
+
+restrict_stmt   :   exp_decl
+                    {}
+                |   compound_decl
                     {}
                 |   select_decl
                     {}
@@ -211,13 +226,13 @@ exp_decl        :   exp SEMI
                     { $$ = NULL;}
                 ;
 
-select_decl     :   IF LPAREN exp RPAREN stmt
+select_decl     :   IF LPAREN exp RPAREN restrict_stmt
                     {
                         $$ = A_new_stmt_node(G_IF);
                         $$->child[0]     = $3;
                         $$->child[1]     = $5;
                     }
-                |   IF  LPAREN exp RPAREN stmt ELSE stmt
+                |   IF  LPAREN exp RPAREN restrict_stmt ELSE restrict_stmt
                     {
                         $$ = A_new_stmt_node(G_IF);
                         $$->child[0]     = $3;
@@ -226,7 +241,7 @@ select_decl     :   IF LPAREN exp RPAREN stmt
                     }
                 ;
 
-iter_decl       :   WHILE LPAREN exp RPAREN stmt
+iter_decl       :   WHILE LPAREN exp RPAREN restrict_stmt
                     {
                         $$ = A_new_stmt_node(G_WHILE);
                         $$->child[0]     = $3;
