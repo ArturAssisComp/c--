@@ -39,5 +39,7 @@ void A_print_tree( G_tree_node * root);
  */
 void A_print_complete_tree( G_tree_node * root);
 
+//Returns a new allocated string that is the contatination of prefix + infix + postfix.
+char *A_append(char *prefix, char *infix, char *postfix);
 
 #endif

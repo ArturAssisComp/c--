@@ -5,6 +5,23 @@
 #include "parser.h"
 #include "parser.tab.h"
 
+char *A_append(char *prefix, char *infix, char *postfix)
+{
+    char *result;
+    size_t sz = strlen(prefix) + strlen(infix) + strlen(postfix) + 1;
+    result = calloc(sz, sizeof *result);
+    if (!result)
+    {
+        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
+        exit(EXIT_FAILURE);
+    }
+
+    result[0] = '\0';
+    snprintf(result, sz, "%s%s%s", prefix, infix, postfix);
+    return result;
+}
+
+
 
 /* A_print_token: prints 'token'
  * and its lexeme to the G_listing file
