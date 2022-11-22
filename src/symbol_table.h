@@ -33,30 +33,20 @@ typedef struct
     } specific_attr;
 }SYM_row_entry;
 
-/* Procedure SYM_insert_into_symbol_table inserts line number 'lineno' into
- * the symbol table entry with key 'key' inside the scope 'scope'. If the entry 
- * does not exist, it is created.
- */
-//void SYM_insert_line_occurrence_into_symbol_table( char * name, char * scope, int lineno);
-
-
-
-/* Procedure SYM_add_definition_to_symbol_table inserts the row entry 'row_entry' into
- * the symbol table. If the entry already exists, it is not added and false is returned.
- * If the entry does not exist, it is added and true is returned.
- */
-bool SYM_add_definition_to_symbol_table( SYM_row_entry *row_entr);
-
-/* Function SYM_is_into_table_within_scope returns true if the entry with name 'name' is into the table
- * within the scope 'scope' and false otherwise. 
- */
-//bool SYM_is_into_table_within_scope ( G_tree_node* name, char *scope );
+//Initiates the symbol table. It must be called before using the symbol table.
+void SYM_init_symbol_table(void);
 
 /* Procedure SYM_print_symbol_table prints a formatted
  * listing of the symbol table contents
  * to the listing file
  */
 void SYM_print_symbol_table(FILE * listing);
+
+/* Procedure SYM_add_definition_to_symbol_table inserts the row entry 'row_entry' into
+ * the symbol table. If the entry already exists, it is not added and false is returned.
+ * If the entry does not exist, it is added and true is returned.
+ */
+bool SYM_add_definition_to_symbol_table( SYM_row_entry *row_entr);
 
 //This function returns true if there is already a function declared with the same name
 //as 'name'.
@@ -69,7 +59,4 @@ bool SYM_there_is_name_conflict(char *name);
 //Returns true if the input with id 'id' is in table. Otherwise, it returns
 //false.
 bool SYM_is_in_table(char *id);
-
-void SYM_init_symbol_table(void);
-
 #endif
