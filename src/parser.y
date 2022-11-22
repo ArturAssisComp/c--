@@ -135,6 +135,7 @@ param           :   spec_type ID
                         $$->semantic_type = $1;
                         $$->attr.name     = $2.name;   
                         $$->lineno        = $2.lineno; 
+                        $$->array_sz      = -1;
                     }
                 |   spec_type ID  LSQ_BRACKET RSQ_BRACKET
                     {
