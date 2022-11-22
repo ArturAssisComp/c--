@@ -73,17 +73,18 @@ int main(int argc, char *argv[])
   if (G_trace_parse) {
     fprintf(G_listing,"\nSyntax tree: \n");
     if (root == NULL) fprintf(G_listing, "<the tree is NULL>\n");
-    A_print_tree(root);
+    else A_print_tree(root);
     fprintf(G_listing,"\n################################\n");
   }
 #if !NO_ANALYZE
-  ANA_set_syntax_tree_scope(root);
-  if (G_trace_analyze) {
-    fprintf(G_listing,"\nSyntax tree (with scope and type): \n");
-    if (root == NULL) fprintf(G_listing, "<the tree is NULL>\n");
-    A_print_complete_tree(root);
-    fprintf(G_listing,"\n################################\n");
-  }
+    ANA_set_syntax_tree_scope(root);
+    if (G_trace_analyze && root) {
+      fprintf(G_listing,"\nSyntax tree (with scope and type): \n");
+      if (root == NULL) fprintf(G_listing, "<the tree is NULL>\n");
+      A_print_complete_tree(root);
+      fprintf(G_listing,"\n################################\n");
+    }
+    if (root) ANA_init_symbol_table(root);
     if (!G_error)
     { 
         ;
