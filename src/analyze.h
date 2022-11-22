@@ -17,5 +17,6 @@ char *ANA_create_key(char *name, char *scope);
 //extracted from id.
 char *ANA_extract_name(char *id);
 
+//Set the scope for nodes of the syntax tree which is meaningful to have scope.
 void ANA_set_syntax_tree_scope(G_tree_node *root);
 #endif

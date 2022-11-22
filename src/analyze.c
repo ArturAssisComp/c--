@@ -4,34 +4,38 @@
 #include "analyze.h"
 #include "aux.h"
 
+//Global variables:
 /* scope variable of studied line */
 static int   scope_id = 0;
 
-static int try_to_evaluate_const_expression(G_tree_node *t)
-{
-    //TODO: Implement
-    return -1;
-}
+//Static function declarations:
+static void free_row_entry(SYM_row_entry **ptr_r);
+static void semantic_error(int lineno, char * message);
+static void traverse_to_init_symbol_table(G_tree_node *t);
+static void traverse_to_define_scope(G_tree_node *t, char *scope);
+static char *remove_scope(char* scope); 
+static char *append_to_scope(char *scope, char* name); 
+static int try_to_evaluate_const_expression(G_tree_node *t);
+static SYM_row_entry *create_row_entry(G_tree_node *t);
 
-static void semantic_error(int lineno, char * message)
+
+//Function definitions:
+void ANA_init_symbol_table(G_tree_node *root)
 { 
-    fprintf(G_listing,"Semantic error at line %d: %s\n",lineno,message);
-    G_error = true;
+    SYM_init_symbol_table();
+    traverse_to_init_symbol_table(root);
+    //traverse_to_check_for_scope_errors(root, t);
+    //traverse_to_check_for_type_errors(root, t);
+    if (G_trace_analyze)
+    { 
+        fprintf(G_listing,"\nSymbol table:\n\n");
+        SYM_print_symbol_table(G_listing);
+    }
 }
 
-char *append_to_scope(char *scope, char* name) {
-    char *result;
-    size_t sz = strlen(scope) + strlen(name) + snprintf(NULL, 0, "%d", scope_id + 1) + 3;
-    result = calloc(sz, sizeof *result);
-    if (!result)
-    {
-        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
-        exit(EXIT_FAILURE);
-    }
-
-    result[0] = '\0';
-    snprintf(result, sz, "%s$%s%%%d", scope, name, ++scope_id);
-    return result;
+char *ANA_create_key(char *name, char *scope)
+{
+    return A_append(scope, "@", name);
 }
 
 char *ANA_extract_name(char *id)
@@ -61,33 +65,16 @@ char *ANA_extract_name(char *id)
     return result;
 }
 
-static char *remove_scope(char* scope) {
-    char *result;
-    size_t i;
-    for(i = strlen(scope) - 1; i >= 0; i--)
-    {
-        if (scope[i] == '$') break;
-    }
-    size_t sz = i + 1;
-    result = calloc(sz, sizeof *result);
-    if (!result)
-    {
-        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
-        exit(EXIT_FAILURE);
-    }
 
-    result[0] = '\0';
-    strncpy(result, scope, i);
-    result[i] = '\0';
-    return result;
-}
-
-char *ANA_create_key(char *name, char *scope)
+void ANA_set_syntax_tree_scope(G_tree_node *root)
 {
-    return A_append(scope, "@", name);
+    char *t = A_copy_string(GLOBAL_PREFIX);
+    scope_id = 0;
+    traverse_to_define_scope(root, t);
 }
 
 
+//Static function definitions:
 static void traverse_to_define_scope(G_tree_node *t, char *scope)
 {
     char *aux_scope = NULL, *tmp = NULL;
@@ -190,6 +177,155 @@ static void traverse_to_define_scope(G_tree_node *t, char *scope)
 }
 
 
+static void traverse_to_init_symbol_table(G_tree_node *t)
+{
+    SYM_row_entry *aux_entry;
+    if (t)
+    {
+        if (t->node_type == G_STMT)
+        { 
+            switch (t->node_subtype.stmt) 
+            {
+                case G_VAR_DCL:
+                case G_PARAM:
+                    aux_entry = create_row_entry(t);
+                    if(SYM_there_is_function_name_conflict(aux_entry->name))
+                    {
+                        //semantic error - there is already a function with the same name
+                        semantic_error(t->lineno, A_append("There is already a declaration of a function with name \"", t->attr.name, "\"."));
+                        exit(EXIT_FAILURE);
+                    }
+                    if(!SYM_add_definition_to_symbol_table(aux_entry))
+                    {
+                        //semantic error - multiple declarations in the same scope
+                        semantic_error(t->lineno, A_append("Multiple declarations of \"", t->attr.name, "\" in the same scope."));
+                        exit(EXIT_FAILURE);
+                    }
+                    free_row_entry(&aux_entry);
+                    break;
+                case G_FUNC_DCL:
+                    aux_entry = create_row_entry(t);
+                    if(SYM_there_is_name_conflict(aux_entry->name))
+                    {
+                        //semantic error - there is already a function/variable with the same name
+                        semantic_error(t->lineno, A_append("There is already a declaration with name \"", t->attr.name, "\"."));
+                        exit(EXIT_FAILURE);
+                    }
+                    if(!SYM_add_definition_to_symbol_table(aux_entry))
+                    {
+                        //semantic error - multiple declarations in the same scope
+                        semantic_error(t->lineno, A_append("Multiple declarations of \"", t->attr.name, "\" in the same scope."));
+                        exit(EXIT_FAILURE);
+                    }
+                    free_row_entry(&aux_entry);
+                    traverse_to_init_symbol_table(t->child[0]);
+                    traverse_to_init_symbol_table(t->child[1]);
+                    break;
+                case G_BLOCK:
+                    traverse_to_init_symbol_table(t->child[0]);
+                    break;
+                case G_IF:
+                    traverse_to_init_symbol_table(t->child[1]);
+                    traverse_to_init_symbol_table(t->child[2]);
+                    break;
+                case G_WHILE:
+                    traverse_to_init_symbol_table(t->child[1]);
+                    break;
+                case G_RETURN:
+                case G_ASSIGNMENT:
+                    break;
+                default:
+                    fprintf(G_listing,"Unknown ExpNode kind\n");
+                    break;
+            }
+        }
+        else if (t->node_type == G_EXP)
+        { 
+            switch (t->node_subtype.exp) {
+                case G_COMP:
+                case G_OP:
+                case G_FUNC_ACTV:
+                case G_CONST:
+                case G_ID:
+                case G_ARRAY_ID:
+                    break;
+                default:
+                    fprintf(G_listing,"Unknown ExpNode kind\n");
+                    break;
+          }
+        }
+        else fprintf(G_listing,"INVALID NODE\n");
+
+        traverse_to_init_symbol_table(t->sibling);
+    }
+}
+
+static void free_row_entry(SYM_row_entry **ptr_r)
+{
+    int i;
+    SYM_row_entry *t = *ptr_r;
+    *ptr_r = NULL;
+    free(t->id);
+    free(t->name);
+    free(t->scope);
+    if (t->id_type == SYM_FUNC)
+    {
+        for (i = 0; i < t->specific_attr.func.num_of_args; i++) free(t->specific_attr.func.args_keys[i]); 
+    }
+}
+
+static void semantic_error(int lineno, char * message)
+{ 
+    fprintf(G_listing,"Semantic error at line %d: %s\n",lineno,message);
+    G_error = true;
+}
+
+static char *remove_scope(char* scope) 
+{
+    char *result;
+    size_t i;
+    for(i = strlen(scope) - 1; i >= 0; i--)
+    {
+        if (scope[i] == '$') break;
+    }
+    size_t sz = i + 1;
+    result = calloc(sz, sizeof *result);
+    if (!result)
+    {
+        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
+        exit(EXIT_FAILURE);
+    }
+
+    result[0] = '\0';
+    strncpy(result, scope, i);
+    result[i] = '\0';
+    return result;
+}
+
+static char *append_to_scope(char *scope, char* name) 
+{
+    char *result;
+    size_t sz = strlen(scope) + strlen(name) + snprintf(NULL, 0, "%d", scope_id + 1) + 3;
+    result = calloc(sz, sizeof *result);
+    if (!result)
+    {
+        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
+        exit(EXIT_FAILURE);
+    }
+
+    result[0] = '\0';
+    snprintf(result, sz, "%s$%s%%%d", scope, name, ++scope_id);
+    return result;
+}
+
+
+static int try_to_evaluate_const_expression(G_tree_node *t)
+{
+    //TODO: Implement
+    return -1;
+}
+
+
 static SYM_row_entry *create_row_entry(G_tree_node *t)
 {
     SYM_row_entry *result = NULL;
@@ -274,125 +410,6 @@ static SYM_row_entry *create_row_entry(G_tree_node *t)
     {
         fprintf(G_listing,"INVALID NODE\n");
         exit(EXIT_FAILURE);
-    }
-}
-
-static void free_row_entry(SYM_row_entry **ptr_r)
-{
-    int i;
-    SYM_row_entry *t = *ptr_r;
-    *ptr_r = NULL;
-    free(t->id);
-    free(t->name);
-    free(t->scope);
-    if (t->id_type == SYM_FUNC)
-    {
-        for (i = 0; i < t->specific_attr.func.num_of_args; i++) free(t->specific_attr.func.args_keys[i]); 
-    }
-}
-
-
-static void traverse_to_init_symbol_table(G_tree_node *t)
-{
-    SYM_row_entry *aux_entry;
-    if (t)
-    {
-        if (t->node_type == G_STMT)
-        { 
-            switch (t->node_subtype.stmt) 
-            {
-                case G_VAR_DCL:
-                case G_PARAM:
-                    aux_entry = create_row_entry(t);
-                    if(SYM_there_is_function_name_conflict(aux_entry->name))
-                    {
-                        //semantic error - there is already a function with the same name
-                        semantic_error(t->lineno, A_append("There is already a declaration of a function with name \"", t->attr.name, "\"."));
-                        exit(EXIT_FAILURE);
-                    }
-                    if(!SYM_add_definition_to_symbol_table(aux_entry))
-                    {
-                        //semantic error - multiple declarations in the same scope
-                        semantic_error(t->lineno, A_append("Multiple declarations of \"", t->attr.name, "\" in the same scope."));
-                        exit(EXIT_FAILURE);
-                    }
-                    free_row_entry(&aux_entry);
-                    break;
-                case G_FUNC_DCL:
-                    aux_entry = create_row_entry(t);
-                    if(SYM_there_is_name_conflict(aux_entry->name))
-                    {
-                        //semantic error - there is already a function/variable with the same name
-                        semantic_error(t->lineno, A_append("There is already a declaration with name \"", t->attr.name, "\"."));
-                        exit(EXIT_FAILURE);
-                    }
-                    if(!SYM_add_definition_to_symbol_table(aux_entry))
-                    {
-                        //semantic error - multiple declarations in the same scope
-                        semantic_error(t->lineno, A_append("Multiple declarations of \"", t->attr.name, "\" in the same scope."));
-                        exit(EXIT_FAILURE);
-                    }
-                    free_row_entry(&aux_entry);
-                    traverse_to_init_symbol_table(t->child[0]);
-                    traverse_to_init_symbol_table(t->child[1]);
-                    break;
-                case G_BLOCK:
-                    traverse_to_init_symbol_table(t->child[0]);
-                    break;
-                case G_IF:
-                    traverse_to_init_symbol_table(t->child[1]);
-                    traverse_to_init_symbol_table(t->child[2]);
-                    break;
-                case G_WHILE:
-                    traverse_to_init_symbol_table(t->child[1]);
-                    break;
-                case G_RETURN:
-                case G_ASSIGNMENT:
-                    break;
-                default:
-                    fprintf(G_listing,"Unknown ExpNode kind\n");
-                    break;
-            }
-        }
-        else if (t->node_type == G_EXP)
-        { 
-            switch (t->node_subtype.exp) {
-                case G_COMP:
-                case G_OP:
-                case G_FUNC_ACTV:
-                case G_CONST:
-                case G_ID:
-                case G_ARRAY_ID:
-                    break;
-                default:
-                    fprintf(G_listing,"Unknown ExpNode kind\n");
-                    break;
-          }
-        }
-        else fprintf(G_listing,"INVALID NODE\n");
-
-        traverse_to_init_symbol_table(t->sibling);
-    }
-}
-
-
-void ANA_set_syntax_tree_scope(G_tree_node *root)
-{
-    char *t = A_copy_string(GLOBAL_PREFIX);
-    scope_id = 0;
-    traverse_to_define_scope(root, t);
-}
-
-void ANA_init_symbol_table(G_tree_node *root)
-{ 
-    SYM_init_symbol_table();
-    traverse_to_init_symbol_table(root);
-    //traverse_to_check_for_scope_errors(root, t);
-    //traverse_to_check_for_type_errors(root, t);
-    if (G_trace_analyze)
-    { 
-        fprintf(G_listing,"\nSymbol table:\n\n");
-        SYM_print_symbol_table(G_listing);
     }
 }
 
