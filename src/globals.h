@@ -22,6 +22,9 @@
 
 #endif
 
+#define PRINT_DEBUG(msg) printf("DEBUG (f. %s l.%d) %s\n", __FILE__, __LINE__, (msg))
+#define GLOBAL_PREFIX "GLOBAL%0"
+
 #define MAXCHILDREN 3
 /*Types definition*/
 
