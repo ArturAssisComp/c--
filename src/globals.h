@@ -59,6 +59,7 @@ typedef struct G_tree_node
        G_type semantic_type; /* for type checking of exps */
        int array_sz; // -1 is default, 0 if [] and >0 otherwise.
        char *scope; //This member will be used during semantic analysis
+       char *declaration_id; //useful for variable/function calling.
    } G_tree_node;
 
 /*Global Variables*/
