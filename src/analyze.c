@@ -13,7 +13,7 @@ static void free_row_entry(SYM_row_entry **ptr_r);
 static void semantic_error(int lineno, char * message);
 static void traverse_to_init_symbol_table(G_tree_node *t);
 static void traverse_to_define_scope(G_tree_node *t, char *scope);
-static char *remove_scope(char* scope); 
+static void traverse_to_check_for_scope_errors(G_tree_node *t);
 static char *append_to_scope(char *scope, char* name); 
 static int try_to_evaluate_const_expression(G_tree_node *t);
 static SYM_row_entry *create_row_entry(G_tree_node *t);
@@ -24,8 +24,8 @@ void ANA_init_symbol_table(G_tree_node *root)
 { 
     SYM_init_symbol_table();
     traverse_to_init_symbol_table(root);
-    //traverse_to_check_for_scope_errors(root, t);
-    //traverse_to_check_for_type_errors(root, t);
+    traverse_to_check_for_scope_errors(root);
+    //traverse_to_check_for_type_errors(root);
     if (G_trace_analyze)
     { 
         fprintf(G_listing,"\nSymbol table:\n\n");
@@ -55,7 +55,7 @@ char *ANA_extract_name(char *id)
     result = calloc(sz, sizeof *result);
     if (!result)
     {
-        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
+        fprintf(G_listing,"(ANA_extract_name)Out of memory error at line %d\n",G_lineno);
         exit(EXIT_FAILURE);
     }
 
@@ -65,6 +65,28 @@ char *ANA_extract_name(char *id)
     return result;
 }
 
+char *ANA_remove_scope_layer(char* scope) 
+{
+    char *result;
+    int i;
+    for(i = strlen(scope) - 1; i >= 0; i--)
+    {
+        if (scope[i] == '$') break;
+    }
+    if(i == -1) i = 0; //no '$' found, equivalent to '$' in position 0.
+    size_t sz = i + 1;
+    result = calloc(sz, sizeof *result);
+    if (!result)
+    {
+        fprintf(G_listing,"(ANA_remove_scope_layer)Out of memory error at line %d\n",G_lineno);
+        exit(EXIT_FAILURE);
+    }
+
+    result[0] = '\0';
+    strncpy(result, scope, i);
+    result[i] = '\0';
+    return result;
+}
 
 void ANA_set_syntax_tree_scope(G_tree_node *root)
 {
@@ -164,6 +186,7 @@ static void traverse_to_define_scope(G_tree_node *t, char *scope)
                     break;
                 case G_ARRAY_ID:
                     t->scope = A_copy_string(scope);                    
+                    traverse_to_define_scope(t->child[0], t->scope);
                     break;
                 default:
                     fprintf(G_listing,"Unknown ExpNode kind\n");
@@ -176,6 +199,258 @@ static void traverse_to_define_scope(G_tree_node *t, char *scope)
     }
 }
 
+
+static void _traverse_to_check_for_scope_errors_special_for_args(G_tree_node *t)
+{
+    char *tmp;
+    G_tree_node *aux_node;
+    if (t)
+    {
+        if (t->node_type == G_STMT)
+        { 
+            switch (t->node_subtype.stmt) 
+            {
+                case G_ASSIGNMENT:
+                    //Traverse the left and right sides of the assignment:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    traverse_to_check_for_scope_errors(t->child[1]); 
+                    break;
+                case G_VAR_DCL:
+                case G_FUNC_DCL:
+                case G_BLOCK:
+                case G_IF:
+                case G_WHILE:
+                case G_RETURN:
+                case G_PARAM:
+                    break;
+                default:
+                    fprintf(G_listing,"Unknown ExpNode kind\n");
+                    break;
+            }
+        }
+        else if (t->node_type == G_EXP)
+        { 
+            switch (t->node_subtype.exp) {
+                case G_COMP:
+                    //Traverse the left and right sides of the comparison:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    traverse_to_check_for_scope_errors(t->child[1]); 
+                    break;
+                case G_OP:
+                    //Traverse the left and right sides of the arithmetic operation:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    traverse_to_check_for_scope_errors(t->child[1]); 
+                    break;
+                case G_FUNC_ACTV:
+                    //Check scope
+                    tmp = SYM_get_function_declaration_id(t->attr.name);
+                    if (!tmp)
+                    {
+                        //semantic error - function not declared
+                        semantic_error(t->lineno, A_append("Function \"", t->attr.name, "\" was not declared."));
+                        exit(EXIT_FAILURE);
+                    }
+                    //count lineno occurrence
+                    t->declaration_id = tmp;
+                    SYM_add_occurrence_to_id(tmp, t->lineno); 
+                    tmp = NULL;
+                    //Traverse the arguments:
+                    aux_node = t->child[0];
+                    while(aux_node)
+                    {
+                        _traverse_to_check_for_scope_errors_special_for_args(aux_node);
+                        aux_node = aux_node->sibling;
+                    }
+                    break;
+                case G_CONST:
+                    break;
+                case G_ID:
+                    if (SYM_there_is_function_name_conflict(t->attr.name))
+                    {
+                        //semantic error - invalid call for function
+                        semantic_error(t->lineno, A_append("Invalid call for function \"", t->attr.name, "\"."));
+                        exit(EXIT_FAILURE);
+                    }
+                    //Check scope
+                    tmp = SYM_get_declaration_id(t->attr.name, t->scope, SYM_ANY);
+                    if (!tmp)
+                    {
+                        //semantic error - variable not declared
+                        semantic_error(t->lineno, A_append("Variable \"", t->attr.name, "\" was not declared within the scope."));
+                        exit(EXIT_FAILURE);
+                    }
+                    //count lineno occurrence
+                    t->declaration_id = tmp;
+                    SYM_add_occurrence_to_id(tmp, t->lineno); 
+                    tmp = NULL;
+                    break;
+                case G_ARRAY_ID:
+                    if (SYM_there_is_function_name_conflict(t->attr.name))
+                    {
+                        //semantic error - invalid call for function
+                        semantic_error(t->lineno, A_append("Invalid call for function \"", t->attr.name, "\"."));
+                        exit(EXIT_FAILURE);
+                    }
+                    //Check scope
+                    tmp = SYM_get_declaration_id(t->attr.name, t->scope, SYM_ARRAY_VAR);
+                    if (!tmp)
+                    {
+                        //semantic error - variable not declared
+                        semantic_error(t->lineno, A_append("Array \"", t->attr.name, "\" was not declared within the scope."));
+                        exit(EXIT_FAILURE);
+                    }
+                    //count lineno occurrence
+                    t->declaration_id = tmp;
+                    SYM_add_occurrence_to_id(tmp, t->lineno); 
+                    tmp = NULL;
+                    //Traverse the expression of the offset:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    break;
+                default:
+                    fprintf(G_listing,"Unknown ExpNode kind\n");
+                    break;
+          }
+        }
+        else fprintf(G_listing,"INVALID NODE\n");
+    }
+}
+
+
+static void traverse_to_check_for_scope_errors(G_tree_node *t)
+{
+    char *tmp;
+    G_tree_node *aux_node;
+    if (t)
+    {
+        if (t->node_type == G_STMT)
+        { 
+            switch (t->node_subtype.stmt) 
+            {
+                case G_VAR_DCL:
+                    break;
+                case G_FUNC_DCL:
+                    //Traverse the body of the function:
+                    traverse_to_check_for_scope_errors(t->child[1]); 
+                    break;
+                case G_BLOCK:
+                    //Traverse the body of the block:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    break;
+                case G_IF:
+                    //Traverse the condition expression and the bodies of the if/else:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    traverse_to_check_for_scope_errors(t->child[1]); 
+                    traverse_to_check_for_scope_errors(t->child[2]); 
+                    break;
+                case G_WHILE:
+                    //Traverse the condition expression and the body of the while:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    traverse_to_check_for_scope_errors(t->child[1]); 
+                    break;
+                case G_RETURN:
+                    //Traverse the expression to be returned:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    break;
+                case G_ASSIGNMENT:
+                    //Traverse the left and right sides of the assignment:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    traverse_to_check_for_scope_errors(t->child[1]); 
+                    break;
+                case G_PARAM:
+                    break;
+                default:
+                    fprintf(G_listing,"Unknown ExpNode kind\n");
+                    break;
+            }
+        }
+        else if (t->node_type == G_EXP)
+        { 
+            switch (t->node_subtype.exp) {
+                case G_COMP:
+                    //Traverse the left and right sides of the comparison:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    traverse_to_check_for_scope_errors(t->child[1]); 
+                    break;
+                case G_OP:
+                    //Traverse the left and right sides of the arithmetic operation:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    traverse_to_check_for_scope_errors(t->child[1]); 
+                    break;
+                case G_FUNC_ACTV:
+                    //Check scope
+                    tmp = SYM_get_function_declaration_id(t->attr.name);
+                    if (!tmp)
+                    {
+                        //semantic error - function not declared
+                        semantic_error(t->lineno, A_append("Function \"", t->attr.name, "\" was not declared."));
+                        exit(EXIT_FAILURE);
+                    }
+                    //count lineno occurrence
+                    t->declaration_id = tmp;
+                    SYM_add_occurrence_to_id(tmp, t->lineno); 
+                    tmp = NULL;
+                    //Traverse the arguments:
+                    aux_node = t->child[0];
+                    while(aux_node)
+                    {
+                        _traverse_to_check_for_scope_errors_special_for_args(aux_node);
+                        aux_node = aux_node->sibling;
+                    }
+                    break;
+                case G_CONST:
+                    break;
+                case G_ID:
+                    if (SYM_there_is_function_name_conflict(t->attr.name))
+                    {
+                        //semantic error - invalid call for function
+                        semantic_error(t->lineno, A_append("Invalid call for function \"", t->attr.name, "\"."));
+                        exit(EXIT_FAILURE);
+                    }
+                    //Check scope
+                    tmp = SYM_get_declaration_id(t->attr.name, t->scope, SYM_VAR);
+                    if (!tmp)
+                    {
+                        //semantic error - variable not declared
+                        semantic_error(t->lineno, A_append("Variable \"", t->attr.name, "\" was not declared within the scope."));
+                        exit(EXIT_FAILURE);
+                    }
+                    //count lineno occurrence
+                    t->declaration_id = tmp;
+                    SYM_add_occurrence_to_id(tmp, t->lineno); 
+                    tmp = NULL;
+                    break;
+                case G_ARRAY_ID:
+                    if (SYM_there_is_function_name_conflict(t->attr.name))
+                    {
+                        //semantic error - invalid call for function
+                        semantic_error(t->lineno, A_append("Invalid call for function \"", t->attr.name, "\"."));
+                        exit(EXIT_FAILURE);
+                    }
+                    //Check scope
+                    tmp = SYM_get_declaration_id(t->attr.name, t->scope, SYM_ARRAY_VAR);
+                    if (!tmp)
+                    {
+                        //semantic error - variable not declared
+                        semantic_error(t->lineno, A_append("Array \"", t->attr.name, "\" was not declared within the scope."));
+                        exit(EXIT_FAILURE);
+                    }
+                    //count lineno occurrence
+                    t->declaration_id = tmp;
+                    SYM_add_occurrence_to_id(tmp, t->lineno); 
+                    tmp = NULL;
+                    //Traverse the expression of the offset:
+                    traverse_to_check_for_scope_errors(t->child[0]); 
+                    break;
+                default:
+                    fprintf(G_listing,"Unknown ExpNode kind\n");
+                    break;
+          }
+        }
+        else fprintf(G_listing,"INVALID NODE\n");
+
+        traverse_to_check_for_scope_errors(t->sibling);
+    }
+}
 
 static void traverse_to_init_symbol_table(G_tree_node *t)
 {
@@ -280,27 +555,6 @@ static void semantic_error(int lineno, char * message)
     G_error = true;
 }
 
-static char *remove_scope(char* scope) 
-{
-    char *result;
-    size_t i;
-    for(i = strlen(scope) - 1; i >= 0; i--)
-    {
-        if (scope[i] == '$') break;
-    }
-    size_t sz = i + 1;
-    result = calloc(sz, sizeof *result);
-    if (!result)
-    {
-        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
-        exit(EXIT_FAILURE);
-    }
-
-    result[0] = '\0';
-    strncpy(result, scope, i);
-    result[i] = '\0';
-    return result;
-}
 
 static char *append_to_scope(char *scope, char* name) 
 {
@@ -309,7 +563,7 @@ static char *append_to_scope(char *scope, char* name)
     result = calloc(sz, sizeof *result);
     if (!result)
     {
-        fprintf(G_listing,"Out of memory error at line %d\n",G_lineno);
+        fprintf(G_listing,"(append_to_scope)Out of memory error at line %d\n",G_lineno);
         exit(EXIT_FAILURE);
     }
 
