@@ -196,6 +196,17 @@ char *SYM_get_declaration_id(char *name, char *scope, SYM_id_type type)
     return NULL;
 }
 
+G_type SYM_get_semantic_type(char *id)
+{
+    row *r = get_row(id);
+    if (!r)
+    {
+        fprintf(G_listing, "(SYM_get_semantic_type)ID not found.");
+        exit(EXIT_FAILURE);
+    }
+    return r->semantic_type;
+}
+
 //Static function definitions:
 static void free_row(row **p_row)
 {
