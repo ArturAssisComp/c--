@@ -46,6 +46,7 @@ static symbol_table *current_table = NULL;
 static void free_row(row **p_row);
 static void print_row(row *r, FILE *listing);
 static void free_table(void);
+static char *get_occurrences_list(int *occurrences, size_t sz);
 static char *semantic_type_to_string(G_type t);
 static int calculate_hash(char *r);
 static bool add_row_to_symbol_table(row *target_row);
@@ -219,20 +220,23 @@ static void free_row(row **p_row)
     }
 }
 
+
 static void print_row(row *r, FILE *listing)
 {
+    char *occurrences_list;
     if (r)
     {
+        occurrences_list = get_occurrences_list(r->lineno_occurrence, r->num_of_occurrences);
         switch(r->row_type)
         {
             case SYM_FUNC:
-                fprintf(listing, "|%10s|%30s|%13s|%20d|%5s|%10s|%12d|%13s|%18d|%50s|\n",r->name,r->scope, r->is_parameter?"true":"false",r->definition_lineno,semantic_type_to_string(r->semantic_type),"Function",r->num_of_args,"----",r->num_of_occurrences,"------");
+                fprintf(listing, "|%10s|%30s|%13s|%20d|%5s|%10s|%12d|%13s|%18d|%50s|\n",r->name,r->scope, r->is_parameter?"true":"false",r->definition_lineno,semantic_type_to_string(r->semantic_type),"Function",r->num_of_args,"----",r->num_of_occurrences, occurrences_list);
                 break;
             case SYM_VAR:
-                fprintf(listing, "|%10s|%30s|%13s|%20d|%5s|%10s|%12s|%13s|%18d|%50s|\n",r->name,r->scope, r->is_parameter?"true":"false", r->definition_lineno,semantic_type_to_string(r->semantic_type),"Variable","----","----",r->num_of_occurrences,"------");
+                fprintf(listing, "|%10s|%30s|%13s|%20d|%5s|%10s|%12s|%13s|%18d|%50s|\n",r->name,r->scope, r->is_parameter?"true":"false", r->definition_lineno,semantic_type_to_string(r->semantic_type),"Variable","----","----",r->num_of_occurrences, occurrences_list);
                 break;
             case SYM_ARRAY_VAR:
-                fprintf(listing, "|%10s|%30s|%13s|%20d|%5s|%10s|%12s|%13d|%18d|%50s|\n",r->name,r->scope, r->is_parameter?"true":"false", r->definition_lineno,semantic_type_to_string(r->semantic_type),"Array Var","----",r->size,r->num_of_occurrences,"------");
+                fprintf(listing, "|%10s|%30s|%13s|%20d|%5s|%10s|%12s|%13d|%18d|%50s|\n",r->name,r->scope, r->is_parameter?"true":"false", r->definition_lineno,semantic_type_to_string(r->semantic_type),"Array Var","----",r->size,r->num_of_occurrences, occurrences_list);
                 break;
             defaul:
                 break;
@@ -249,6 +253,22 @@ static void free_table()
 {
     //TODO: implement
     free(current_table);
+}
+
+static char *get_occurrences_list(int *occurrences, size_t sz)
+{
+    char *result, *tmp, *num;
+    int i;
+    result = A_int_to_string(occurrences[0]);
+    for (i = 1; i < sz; i++)
+    {
+        num = A_int_to_string(occurrences[i]);
+        tmp = A_append(result, ", ", num);
+        free(num);
+        free(result);
+        result = tmp;
+    }
+    return result;
 }
 
 static char *semantic_type_to_string(G_type t)
