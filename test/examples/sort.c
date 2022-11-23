@@ -1,7 +1,8 @@
 /* Um programa para ordenação de
 Uma matriz com dez elementos. */
 int x[10];
-
+int input(void){;}
+void output(int i){;}
 int minloc ( int a[], int low, int high)
 { 
     int i; int x; int k;

@@ -2,7 +2,8 @@
 int main(void)
 {
   int a;
+  int x;
   a = 2 + 3;
-  while(true) while(true) x = 1;
+  while(1) while(1) x = 1;
   return 1;
 }
