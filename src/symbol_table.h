@@ -73,7 +73,11 @@ char *SYM_get_function_declaration_id(char *name);
 //'scope' and with type 'type'. If there is no match, NULL is returned.
 char *SYM_get_declaration_id(char *name, char *scope, SYM_id_type type);
 
-//Returns the semantic type of the row with id 'id'.
+//Returns the id of the function in which the scope is in.
+//NULL is returned if the scope is global and is not inside any function.
+char *SYM_get_parent_function_id(char *scope);
+
+//Returns the semantic type of the row with a valid id 'id'.
 G_type SYM_get_semantic_type(char *id);
 
 #endif

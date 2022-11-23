@@ -196,6 +196,31 @@ char *SYM_get_declaration_id(char *name, char *scope, SYM_id_type type)
     return NULL;
 }
 
+char *SYM_get_parent_function_id(char *scope)
+{
+    int init = sizeof GLOBAL_PREFIX;
+    int end = init - 1;
+    char *parent_id;
+    char *func_name;
+    if(!strcmp(GLOBAL_PREFIX, scope)) return NULL;
+    if(strlen(scope) <= sizeof GLOBAL_PREFIX - 1) 
+    {
+        fprintf(G_listing, "(SYM_get_parent_function_id) Invalid scope.");
+        exit(EXIT_FAILURE);
+    }
+    while(scope[++end] != '%');
+    func_name = calloc(end - init + 1, *func_name);
+    if(!func_name)
+    {
+        fprintf(G_listing, "(SYM_get_parent_function_id) Out of memory.");
+        exit(EXIT_FAILURE);
+    }
+    strncpy(func_name, scope + init,  end - init);
+    parent_id = SYM_get_function_declaration_id(func_name);
+    free(func_name);
+    return parent_id;
+}
+
 G_type SYM_get_semantic_type(char *id)
 {
     row *r = get_row(id);
