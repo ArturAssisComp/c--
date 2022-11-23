@@ -336,6 +336,20 @@ char *A_append(char *prefix, char *infix, char *postfix)
     return result;
 }
 
+char *A_int_to_string(int n)
+{
+    char *result;
+    size_t sz = snprintf(NULL, 0, "%d", n) + 1;
+    result = calloc(sz, sizeof *result);
+    if(!result)
+    {
+        fprintf(G_listing,"(A_int_to_string) Out of memory error at line %d\n",G_lineno);
+        exit(EXIT_FAILURE);
+    }
+    snprintf(result, sz, "%d", n);
+    return result;
+}
+
 //Static function definitions:
 static void print_spaces(void)
 { 

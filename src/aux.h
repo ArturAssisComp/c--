@@ -40,4 +40,7 @@ char * A_copy_string( char * s);
 //Returns a new allocated string that is the contatination of prefix + infix + postfix.
 char *A_append(char *prefix, char *infix, char *postfix);
 
+//Returns an allocated string of the integer 'n'.
+char *A_int_to_string(int n);
+
 #endif
