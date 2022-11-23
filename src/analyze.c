@@ -27,6 +27,12 @@ void ANA_init_symbol_table(G_tree_node *root)
     traverse_to_init_symbol_table(root);
     traverse_to_check_for_scope_errors(root);
     traverse_to_check_for_type_errors(root);
+    if(!SYM_there_is_function_name_conflict("main"))
+    {
+        //semantic error - main function not declared
+        semantic_error(0, "Main function not declared.");
+        exit(EXIT_FAILURE);
+    }
     if (G_trace_analyze)
     { 
         fprintf(G_listing,"\nSymbol table:\n\n");
