@@ -7,7 +7,7 @@
 #define BUFFER_LIMIT 1024
 #define ARGS_BUFFER_LIMIT 128
 
-typedef enum {SYM_FUNC, SYM_VAR, SYM_ARRAY_VAR} SYM_id_type;
+typedef enum {SYM_FUNC, SYM_VAR, SYM_ARRAY_VAR, SYM_ANY} SYM_id_type;
 
 typedef struct
 {
@@ -33,8 +33,13 @@ typedef struct
     } specific_attr;
 }SYM_row_entry;
 
+
 //Initiates the symbol table. It must be called before using the symbol table.
 void SYM_init_symbol_table(void);
+
+//Increments the occurrence counter of row with id 'id' and
+//adds the lineno of the occurrence.
+void SYM_add_occurrence_to_id(char *id, int lineno); 
 
 /* Procedure SYM_print_symbol_table prints a formatted
  * listing of the symbol table contents
@@ -59,4 +64,14 @@ bool SYM_there_is_name_conflict(char *name);
 //Returns true if the input with id 'id' is in table. Otherwise, it returns
 //false.
 bool SYM_is_in_table(char *id);
+
+//This function returns an allocated string with the id of first occurrence of 
+//a function with name 'name'. If there is not any, NULL is returned.
+char *SYM_get_function_declaration_id(char *name);
+
+//This function returns the closest declaration id that matches with the id formed by 'name' and
+//'scope' and with type 'type'. If there is no match, NULL is returned.
+char *SYM_get_declaration_id(char *name, char *scope, SYM_id_type type);
+
+
 #endif

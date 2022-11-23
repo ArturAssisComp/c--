@@ -50,6 +50,7 @@ static char *semantic_type_to_string(G_type t);
 static int calculate_hash(char *r);
 static bool add_row_to_symbol_table(row *target_row);
 static row *create_row(SYM_row_entry *row_entry);
+static row *get_row(char *id);
 
 
 //Function definitions:
@@ -69,15 +70,29 @@ void SYM_init_symbol_table()
     current_table->num_of_elements = 0;
 }
 
+void SYM_add_occurrence_to_id(char *id, int lineno) 
+{
+    row *r = get_row(id);
+    if (r)
+    {
+        if(r->num_of_occurrences >= MAX_OCCURRENCES)
+        {
+            fprintf(G_listing, "Occurrences of the id \"%s\" exceded the limit of %d occurrences.", id, MAX_OCCURRENCES);
+            exit(EXIT_FAILURE);
+        }
+        r->lineno_occurrence[r->num_of_occurrences++] = lineno;
+    }
+}
+
 void SYM_print_symbol_table(FILE * listing)
 {
     int i;
     int remaining_elements = current_table->num_of_elements;
     row *aux;
     //calculate the max padding for each column:
-    fprintf(listing, "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
+    fprintf(listing, "|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|\n");
     print_row(NULL, listing); //print the header
-    fprintf(listing, "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
+    fprintf(listing, "|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|\n");
     for(i = 0; i < BASE_ARRAY_SZ && remaining_elements > 0; i++)
     {
         aux = current_table->base_array[i];
@@ -88,7 +103,7 @@ void SYM_print_symbol_table(FILE * listing)
             aux = aux->next;
         }
     }
-    fprintf(listing, "------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------\n");
+    fprintf(listing, "|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|\n");
 }
 
 bool SYM_add_definition_to_symbol_table( SYM_row_entry *row_entry)
@@ -104,18 +119,11 @@ bool SYM_add_definition_to_symbol_table( SYM_row_entry *row_entry)
 
 bool SYM_there_is_function_name_conflict(char *name)
 {
-    int i;
-    int remaining_elements = current_table->num_of_elements;
-    row *aux;
-    for(i = 0; i < BASE_ARRAY_SZ && remaining_elements > 0; i++)
+    char *func_id = SYM_get_function_declaration_id(name);
+    if (func_id)
     {
-        aux = current_table->base_array[i];
-        while(aux)
-        {
-            if(aux->row_type == SYM_FUNC && strcmp(name, aux->name) == 0) return true;
-            remaining_elements--;
-            aux = aux->next;
-        }
+        free(func_id);
+        return true;
     }
     return false;
 }
@@ -140,15 +148,51 @@ bool SYM_there_is_name_conflict(char *name)
 
 bool SYM_is_in_table(char *id)
 {
-    int hash = calculate_hash(id);
-    row *aux = current_table->base_array[hash];
-
-    while(aux)
-    {
-        if (strcmp(id, aux->id) == 0) return true;
-        aux = aux->next;
-    }
+    if(get_row(id)) return true;
     return false;
+}
+
+char *SYM_get_function_declaration_id(char *name)
+{
+    int i;
+    int remaining_elements = current_table->num_of_elements;
+    row *aux;
+    for(i = 0; i < BASE_ARRAY_SZ && remaining_elements > 0; i++)
+    {
+        aux = current_table->base_array[i];
+        while(aux)
+        {
+            if(aux->row_type == SYM_FUNC && strcmp(name, aux->name) == 0) return A_copy_string(aux->id);
+            remaining_elements--;
+            aux = aux->next;
+        }
+    }
+    return NULL;
+}
+
+char *SYM_get_declaration_id(char *name, char *scope, SYM_id_type type)
+{
+    char *current_scope, *current_id, *tmp;
+    row *current_row;
+    current_scope = A_copy_string(scope);
+    while(strcmp(current_scope, ""))
+    {
+        current_id = ANA_create_key(name, current_scope);
+        current_row = get_row(current_id);
+        if(current_row) 
+        {
+            if(type == SYM_ANY || current_row->row_type == type)
+            {
+                free(current_scope);
+                return current_id;
+            }
+        }
+        tmp = ANA_remove_scope_layer(current_scope);
+        free(current_id);
+        free(current_scope);
+        current_scope = tmp;
+    }
+    return NULL;
 }
 
 //Static function definitions:
@@ -297,4 +341,17 @@ static row *create_row(SYM_row_entry *row_entry)
 
     }
     return new_row;
+}
+
+static row *get_row(char *id)
+{
+    int hash = calculate_hash(id);
+    row *aux = current_table->base_array[hash];
+
+    while(aux)
+    {
+        if (strcmp(id, aux->id) == 0) return aux;
+        aux = aux->next;
+    }
+    return NULL;
 }
