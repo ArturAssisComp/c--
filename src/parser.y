@@ -36,11 +36,11 @@ int yyerror(char *s);
 %nterm <tkn_type> mult sum relational
 %nterm <semantic_type> spec_type
 %token ERROR 
-%token IF ELSE RETURN WHILE
+%token IF ELSE WHILE
 %token <semantic_type> VOID INT
 %token <id_type> ID 
 %token <num_type> NUM
-%token <tkn_type> ASSIGN EQ NEQ LT LET GT GET PLUS MINUS TIMES OVER
+%token <tkn_type>  ASSIGN EQ NEQ LT LET GT GET PLUS MINUS TIMES OVER RETURN
 %token LPAREN RPAREN SEMI COMMA LSQ_BRACKET RSQ_BRACKET LCU_BRACKET RCU_BRACKET
 
 
@@ -253,11 +253,13 @@ iter_decl       :   WHILE LPAREN exp RPAREN restrict_stmt
 return_decl     :   RETURN SEMI
                     {
                         $$ = A_new_stmt_node(G_RETURN);
+                        $$->attr.op  = RETURN;
                     }
                 |   RETURN exp SEMI
                     {
                         $$ = A_new_stmt_node(G_RETURN);
                         $$->child[0] = $2;
+                        $$->attr.op  = RETURN;
                     }
                 ;
 
@@ -266,6 +268,7 @@ exp             :   var ASSIGN exp
                         $$ = A_new_stmt_node(G_ASSIGNMENT);
                         $$->child[0] = $1;
                         $$->child[1] = $3;
+                        $$->attr.op  = $2;
                     }
                 |   simple_exp
                     {}

@@ -58,8 +58,11 @@ typedef struct G_tree_node
                char * name; } attr;
        G_type semantic_type; /* for type checking of exps */
        int array_sz; // -1 is default, 0 if [] and >0 otherwise.
+       //Semantic analysis attributes:
        char *scope; //This member will be used during semantic analysis
        char *declaration_id; //useful for variable/function calling.
+       //Code generation attributes:
+       char *var_name;
    } G_tree_node;
 
 /*Global Variables*/
@@ -91,6 +94,8 @@ extern bool G_trace_parse;
  * printed to the listing file. 
  */
 extern bool G_trace_analyze;
+
+extern bool G_trace_code;
 
 /* Error = true prevents further passes if an error occurs */
 extern bool G_error;

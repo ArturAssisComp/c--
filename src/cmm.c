@@ -14,7 +14,7 @@
 /* set NO_CODE to true to get a compiler that does not
  * generate code
  */
-#define NO_CODE true 
+#define NO_CODE false
 
 #if NO_PARSE
 #include "scanner.h"
@@ -23,7 +23,7 @@
 #if !NO_ANALYZE
 #include "analyze.h"
 #if !NO_CODE
-#include "cgen.h"
+#include "code_generator.h"
 #endif
 #endif
 #endif
@@ -39,6 +39,7 @@ bool G_echo_source = true;
 bool G_trace_scan  = true;
 bool G_trace_parse = true;
 bool G_trace_analyze = true;
+bool G_trace_code = true;
 bool G_error       = true;
 
 
@@ -47,13 +48,36 @@ int main(int argc, char *argv[])
 {
     G_tree_node *root;
     char source_filename[MAX_FILENAME]; 
-    strncpy(source_filename, argv[1], MAX_FILENAME) ;
-    if(argc == 1) G_source = stdin;
+    char code_filename[MAX_FILENAME] = "out.ic"; 
+    if(argc == 1) 
+    {
+        G_source = stdin;
+        G_code = stdout;
+    }
     else if (argc == 2) 
     {
 
+        strncpy(source_filename, argv[1], MAX_FILENAME) ;
         G_source = fopen(source_filename, "r");
         if(!G_source)
+        {
+            perror("fopen");
+            exit(EXIT_FAILURE);        
+        }
+        G_code = stdout;
+    }
+    else if(argc == 3)
+    {
+        strncpy(source_filename, argv[1], MAX_FILENAME) ;
+        strncpy(code_filename, argv[2], MAX_FILENAME) ;
+        G_source = fopen(source_filename, "r");
+        if(!G_source)
+        {
+            perror("fopen");
+            exit(EXIT_FAILURE);        
+        }
+        G_code = fopen(code_filename, "w");
+        if(!G_code)
         {
             perror("fopen");
             exit(EXIT_FAILURE);        
@@ -61,7 +85,7 @@ int main(int argc, char *argv[])
     }
     else 
     {
-        fprintf(stderr, "Usage: %s <filename>", argv[0]);
+        fprintf(stderr, "Usage: %s [<source_code_file>] [<intermediate_code_file>]", argv[0]);
         exit(EXIT_FAILURE);
     }
 
@@ -90,6 +114,7 @@ int main(int argc, char *argv[])
         ;
     }
 #if !NO_CODE
+    if(root) CG_generate_code(root, code_filename);
     if (! G_error)
     { 
         ;
