@@ -14,6 +14,7 @@ static void semantic_error(int lineno, char * message);
 static void traverse_to_init_symbol_table(G_tree_node *t);
 static void traverse_to_define_scope(G_tree_node *t, char *scope);
 static void traverse_to_check_for_scope_errors(G_tree_node *t);
+static void traverse_to_check_for_type_errors(G_tree_node *t);
 static char *append_to_scope(char *scope, char* name); 
 static int try_to_evaluate_const_expression(G_tree_node *t);
 static SYM_row_entry *create_row_entry(G_tree_node *t);
@@ -25,7 +26,7 @@ void ANA_init_symbol_table(G_tree_node *root)
     SYM_init_symbol_table();
     traverse_to_init_symbol_table(root);
     traverse_to_check_for_scope_errors(root);
-    //traverse_to_check_for_type_errors(root);
+    traverse_to_check_for_type_errors(root);
     if (G_trace_analyze)
     { 
         fprintf(G_listing,"\nSymbol table:\n\n");
@@ -150,9 +151,11 @@ static void traverse_to_define_scope(G_tree_node *t, char *scope)
                     traverse_to_define_scope(t->child[1], t->scope);
                     break;
                 case G_RETURN:
+                    t->scope = A_copy_string(scope);                    
                     traverse_to_define_scope(t->child[0], scope);
                     break;
                 case G_ASSIGNMENT:
+                    t->scope = A_copy_string(scope);                    
                     traverse_to_define_scope(t->child[0], scope);
                     traverse_to_define_scope(t->child[1], scope);
                     break;
@@ -168,10 +171,12 @@ static void traverse_to_define_scope(G_tree_node *t, char *scope)
         { 
             switch (t->node_subtype.exp) {
                 case G_COMP:
+                    t->scope = A_copy_string(scope);                    
                     traverse_to_define_scope(t->child[0], scope);
                     traverse_to_define_scope(t->child[1], scope);
                     break;
                 case G_OP:
+                    t->scope = A_copy_string(scope);                    
                     traverse_to_define_scope(t->child[0], scope);
                     traverse_to_define_scope(t->child[1], scope);
                     break;
@@ -180,6 +185,7 @@ static void traverse_to_define_scope(G_tree_node *t, char *scope)
                     traverse_to_define_scope(t->child[0], scope);
                     break;
                 case G_CONST:
+                    t->scope = A_copy_string(scope);                    
                     break;
                 case G_ID:
                     t->scope = A_copy_string(scope);                    
@@ -451,6 +457,217 @@ static void traverse_to_check_for_scope_errors(G_tree_node *t)
         traverse_to_check_for_scope_errors(t->sibling);
     }
 }
+
+static void traverse_to_check_for_type_errors(G_tree_node *t)
+{
+    G_type s_type;
+    G_tree_node *aux_node;
+    int i;
+    int num_of_args;
+    char *tmp, *parent_function_id, *param_id ;
+
+    if (t)
+    {
+        if (t->node_type == G_STMT)
+        { 
+            switch (t->node_subtype.stmt) 
+            {
+                case G_VAR_DCL:
+                    switch(t->semantic_type)
+                    {
+                        case G_INT:
+                            break;
+                        case G_VOID:
+                            semantic_error(t->lineno, A_append("Variable \"", t->attr.name, "\" declared as void."));
+                            exit(EXIT_FAILURE);
+                            break;
+                        default:
+                            semantic_error(t->lineno, A_append("Variable \"", t->attr.name, "\" has invalid type."));
+                            exit(EXIT_FAILURE);
+                            break;
+                    }
+                    break;
+                case G_FUNC_DCL:
+                    traverse_to_check_for_type_errors(t->child[0]);
+                    traverse_to_check_for_type_errors(t->child[1]);
+                    break;
+                case G_BLOCK:
+                    traverse_to_check_for_type_errors(t->child[0]);
+                    break;
+                case G_IF:
+                    traverse_to_check_for_type_errors(t->child[0]);
+                    s_type = t->child[0]->semantic_type; 
+                    switch(s_type)
+                    {
+                        case G_INT:
+                            break;
+                        case G_VOID:
+                        default:
+                            semantic_error(t->lineno, A_append("Invalid IF expression type: ", A_semantic_type_to_str(s_type), ""));
+                            exit(EXIT_FAILURE);
+                            break;
+                    }
+                    traverse_to_check_for_type_errors(t->child[1]);
+                    traverse_to_check_for_type_errors(t->child[2]);
+                    break;
+                case G_WHILE:
+                    traverse_to_check_for_type_errors(t->child[0]);
+                    s_type = t->child[0]->semantic_type; 
+                    switch(s_type)
+                    {
+                        case G_INT:
+                            break;
+                        case G_VOID:
+                        default:
+                            semantic_error(t->lineno, A_append("Invalid WHILE expression type: ", A_semantic_type_to_str(s_type), ""));
+                            exit(EXIT_FAILURE);
+                            break;
+                    }
+                    traverse_to_check_for_type_errors(t->child[1]);
+                    break;
+                case G_RETURN:
+                    traverse_to_check_for_type_errors(t->child[0]);
+                    if(t->child[0]) t->semantic_type = t->child[0]->semantic_type;
+                    else t->semantic_type = G_VOID;
+
+                    parent_function_id = SYM_get_parent_function_id(t->scope);
+                    s_type = SYM_get_semantic_type(parent_function_id);
+                    if(t->semantic_type != s_type)
+                    {
+                        semantic_error(t->lineno, A_append("Invalid return type, \"", A_semantic_type_to_str(s_type) ,"\" was expected"));
+                        exit(EXIT_FAILURE);
+                    }
+                    free(parent_function_id);
+                    break;
+                case G_ASSIGNMENT:
+                    traverse_to_check_for_type_errors(t->child[0]);
+                    traverse_to_check_for_type_errors(t->child[1]);
+                    if(t->child[0]->semantic_type != t->child[1]->semantic_type)
+                    {
+                        semantic_error(t->lineno, "Assignment of a type to a variable of different type .");
+                        exit(EXIT_FAILURE);
+                    }
+                    t->semantic_type = t->child[0]->semantic_type;
+                    break;
+                case G_PARAM:
+                    switch(t->semantic_type)
+                    {
+                        case G_INT:
+                            break;
+                        case G_VOID:
+                            semantic_error(t->lineno, A_append("Parameter \"", t->attr.name, "\" declared as void."));
+                            exit(EXIT_FAILURE);
+                            break;
+                        default:
+                            semantic_error(t->lineno, A_append("Parameter \"", t->attr.name, "\" has invalid type."));
+                            exit(EXIT_FAILURE);
+                            break;
+                    }
+                    break;
+                default:
+                    fprintf(G_listing,"Unknown ExpNode kind\n");
+                    break;
+            }
+        }
+        else if (t->node_type == G_EXP)
+        { 
+            switch (t->node_subtype.exp) {
+                case G_COMP:
+                case G_OP:
+                    traverse_to_check_for_type_errors(t->child[0]);
+                    traverse_to_check_for_type_errors(t->child[1]);
+                    if(t->child[0]->semantic_type != t->child[1]->semantic_type)
+                    {
+                        semantic_error(t->lineno, "Left and right sides have different types.");
+                        exit(EXIT_FAILURE);
+                    }
+                    t->semantic_type = t->child[0]->semantic_type;
+                    break;
+                case G_FUNC_ACTV:
+                    //get the type from symbol table
+                    tmp = SYM_get_function_declaration_id(t->attr.name);
+                    if (!tmp)
+                    {
+                        //semantic error - function not declared
+                        semantic_error(t->lineno, A_append("Function \"", t->attr.name, "\" was not declared."));
+                        exit(EXIT_FAILURE);
+                    }
+                    t->semantic_type = SYM_get_semantic_type(tmp);
+
+                    traverse_to_check_for_type_errors(t->child[0]);
+                    aux_node = t->child[0];
+                    num_of_args = SYM_get_num_of_args(tmp);
+                    i = 0;
+                    while(aux_node)
+                    {
+                        if (i + 1 > num_of_args) 
+                        {
+                            semantic_error(aux_node->lineno, A_append("More arguments than expected for function ", t->attr.name, "."));
+                            exit(EXIT_FAILURE);
+                        }
+                        param_id = SYM_get_function_parameter_id(tmp, i);
+
+                        if(aux_node->semantic_type != SYM_get_semantic_type(param_id))
+                        {
+                            semantic_error(aux_node->lineno, "Argument type does not match the parameter expected type.");
+                            exit(EXIT_FAILURE);
+                        }
+                        free(param_id);
+                        aux_node = aux_node->sibling;
+                        i++;
+                    }
+                    if (i < num_of_args) 
+                    {
+                        semantic_error(t->lineno, A_append("Less arguments than expected for function ", t->attr.name, "."));
+                        exit(EXIT_FAILURE);
+                    }
+                    free(tmp);
+                    break;
+                case G_CONST:
+                    t->semantic_type = G_INT;
+                    break;
+                case G_ID:
+                    //get the type from symbol table
+                    tmp = SYM_get_declaration_id(t->attr.name, t->scope, SYM_ANY);
+                    if (!tmp)
+                    {
+                        //semantic error - variable not declared
+                        semantic_error(t->lineno, A_append("Variable \"", t->attr.name, "\" was not declared within the scope."));
+                        exit(EXIT_FAILURE);
+                    }
+                    t->semantic_type = SYM_get_semantic_type(tmp);
+                    free(tmp);
+                    break;
+                case G_ARRAY_ID:
+                    //get the type from symbol table
+                    tmp = SYM_get_declaration_id(t->attr.name, t->scope, SYM_ARRAY_VAR);
+                    if (!tmp)
+                    {
+                        //semantic error - variable not declared
+                        semantic_error(t->lineno, A_append("Variable \"", t->attr.name, "\" was not declared within the scope."));
+                        exit(EXIT_FAILURE);
+                    }
+                    t->semantic_type = SYM_get_semantic_type(tmp);
+                    free(tmp);
+
+                    traverse_to_check_for_type_errors(t->child[0]);
+                    if(t->child[0]->semantic_type != G_INT)
+                    {
+                        semantic_error(t->lineno, "Index of an array must be an int");
+                        exit(EXIT_FAILURE);
+                    }
+                    break;
+                default:
+                    fprintf(G_listing,"Unknown ExpNode kind\n");
+                    break;
+          }
+        }
+        else fprintf(G_listing,"INVALID NODE\n");
+
+        traverse_to_check_for_type_errors(t->sibling);
+    }
+}
+
 
 static void traverse_to_init_symbol_table(G_tree_node *t)
 {
