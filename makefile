@@ -1,10 +1,12 @@
-objects = src/scanner.o src/parser.tab.o src/aux.o src/cmm.o
+objects = src/scanner.o src/parser.tab.o src/aux.o src/cmm.o src/analyze.o src/symbol_table.o
 LDFLAGS = -lfl
 PFLAGS  = -d
 PARSER  = bison
 LEX     = flex
 CC      = gcc
 EXAMPLE_FILES = test/examples/* 
+EXAMPLE_PREFIX = test/examples/
+EXAMPLE_FILENAME   = debug.c
 
 # Ctest variables:
 ctest_a     = ext/ctest_lib/lib/ctest.a
@@ -40,13 +42,21 @@ test: build_test $(objects) test/test_scanner.o
 	$(CC) -o build/test/test_scanner test/test_scanner.o src/aux.o $(ctest_a) src/scanner.o src/parser.tab.o $(LDFLAGS)
 
 run_examples: main  
-	for file in $(EXAMPLE_FILES) ; do \
+	for filename in $(EXAMPLE_FILES) ; do \
 		echo ;                        \
-		echo "File" $${file} ;         \
-		cat $${file} ;                \
-	    echo "Executing" $${file} ;   \
-		build/cmm $${file} ;          \
+		echo "File" $${filename} ;         \
+		cat $${filename} ;                \
+	    echo "Executing" $${filename} ;   \
+		build/cmm $${filename} ;          \
 	done
+
+run_example_file: main
+	echo ;                        \
+	echo "File" $(EXAMPLE_PREFIX)$(EXAMPLE_FILENAME) ;        \
+	cat $(EXAMPLE_PREFIX)$(EXAMPLE_FILENAME) ;                \
+	echo "Executing" $(EXAMPLE_PREFIX)$(EXAMPLE_FILENAME) ;   \
+	build/cmm $(EXAMPLE_PREFIX)$(EXAMPLE_FILENAME) ;          
+
 
 
 

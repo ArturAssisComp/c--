@@ -65,6 +65,17 @@ To clean, run:
 make clean
 ```
 
+In order to run all examples:
+```bash
+make run_examples
+```
+
+In order to run a specific example file (the default value for EXAMPLE_FILENAME is debug.c):
+```bash
+make run_example_file EXAMPLE_FILENAME=<filename>
+```
+
+
 ## Testing
 
 Before testing, install the necessary files:

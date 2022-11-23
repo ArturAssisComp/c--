@@ -22,42 +22,13 @@
 
 #endif
 
+#define PRINT_DEBUG(msg) printf("DEBUG (f. %s l.%d) %s\n", __FILE__, __LINE__, (msg))
+#define GLOBAL_PREFIX "GLOBAL%0"
 #define MAXCHILDREN 3
+
 /*Types definition*/
 
 typedef int G_token_type;
-
-/*Global Variables*/
-extern FILE* G_source;  /* source code text file */
-extern FILE* G_listing; /* listing output text file */
-extern FILE* G_code;    /* code text file */
-
-extern int G_lineno;    /* source line number for listing */
-
-/** Tracing flags **/
-
-/* echo_source = true causes the source program to
- * be echoed to the listing file with line numbers
- * during parsing
- */
-extern bool G_echo_source;
-
-/* trace_scan = true causes token information to be
- * printed to the listing file as each token is
- * recognized by the scanner
- */
-extern bool G_trace_scan;
-
-/* trace_parse = true causes parsing information to be
- * printed to the listing file. 
- */
-extern bool G_trace_parse;
-
-/* Error = true prevents further passes if an error occurs */
-extern bool G_error;
-
-
-
 
 //Syntax tree:
 typedef struct {                                                                                                                              
@@ -87,7 +58,42 @@ typedef struct G_tree_node
                char * name; } attr;
        G_type semantic_type; /* for type checking of exps */
        int array_sz; // -1 is default, 0 if [] and >0 otherwise.
+       char *scope; //This member will be used during semantic analysis
+       char *declaration_id; //useful for variable/function calling.
    } G_tree_node;
+
+/*Global Variables*/
+extern FILE* G_source;  /* source code text file */
+extern FILE* G_listing; /* listing output text file */
+extern FILE* G_code;    /* code text file */
+extern int G_lineno;    /* source line number for listing */
+
+/** Tracing flags **/
+
+/* echo_source = true causes the source program to
+ * be echoed to the listing file with line numbers
+ * during parsing
+ */
+extern bool G_echo_source;
+
+/* trace_scan = true causes token information to be
+ * printed to the listing file as each token is
+ * recognized by the scanner
+ */
+extern bool G_trace_scan;
+
+/* trace_parse = true causes parsing information to be
+ * printed to the listing file. 
+ */
+extern bool G_trace_parse;
+
+/* trace_analyze = true causes semantic analysis information to be
+ * printed to the listing file. 
+ */
+extern bool G_trace_analyze;
+
+/* Error = true prevents further passes if an error occurs */
+extern bool G_error;
 
 #endif
 

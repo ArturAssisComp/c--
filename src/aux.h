@@ -6,6 +6,17 @@
 
 /*Auxiliary function declarations*/
 
+/* procedure A_print_tree prints a syntax tree to the
+ * listing file using indentation to indicate subtrees
+ */
+void A_print_tree( G_tree_node * root);
+
+/* procedure A_print_complete_tree prints a syntax tree with some semantic 
+ * information (scope and type) to the G_listing file using indentation to indicate 
+ * subtrees
+ */
+void A_print_complete_tree( G_tree_node * root);
+
 /* A_print_token: prints 'token'
  * and its lexeme to the G_listing file
  */
@@ -26,10 +37,13 @@ G_tree_node * A_new_exp_node(G_exp_type exp_type);
  */
 char * A_copy_string( char * s);
 
-/* procedure A_print_tree prints a syntax tree to the
- * listing file using indentation to indicate subtrees
- */
-void A_print_tree( G_tree_node * root);
+//Returns a new allocated string that is the contatination of prefix + infix + postfix.
+char *A_append(char *prefix, char *infix, char *postfix);
 
+//Returns an allocated string of the integer 'n'.
+char *A_int_to_string(int n);
+
+//Returns a constant string of a semantic type
+char *A_semantic_type_to_str(G_type s_type);
 
 #endif
