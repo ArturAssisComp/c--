@@ -1,4 +1,4 @@
-objects = src/scanner.o src/parser.tab.o src/aux.o src/cmm.o src/analyze.o src/symbol_table.o
+objects = src/scanner.o src/parser.tab.o src/aux.o src/cmm.o src/analyze.o src/symbol_table.o src/code_generator.o
 LDFLAGS = -lfl
 PFLAGS  = -d
 PARSER  = bison
