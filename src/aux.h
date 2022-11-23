@@ -43,4 +43,7 @@ char *A_append(char *prefix, char *infix, char *postfix);
 //Returns an allocated string of the integer 'n'.
 char *A_int_to_string(int n);
 
+//Returns a constant string of a semantic type
+char *A_semantic_type_to_str(G_type s_type);
+
 #endif

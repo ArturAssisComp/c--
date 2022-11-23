@@ -18,7 +18,6 @@ static state current_state = ROOT;
 
 //Static function declarations:
 static void print_spaces(void);
-static char *semantic_type_to_str(G_type s_type);
 static char *get_basic_token_str( G_token_type token);
 
 //Function definitions:
@@ -36,12 +35,12 @@ void A_print_tree( G_tree_node * root)
             switch (root->node_subtype.stmt) 
             {
                 case G_VAR_DCL:
-                  if (root->array_sz == -1) fprintf(G_listing,"DECLARE VAR \"%s\" OF TYPE %s\n", root->attr.name, semantic_type_to_str(root->semantic_type));
-                  else if (root->array_sz > 0) fprintf(G_listing,"DECLARE ARRAY VAR \"%s\" OF TYPE %s AND SIZE %d\n", root->attr.name, semantic_type_to_str(root->semantic_type), root->array_sz); 
+                  if (root->array_sz == -1) fprintf(G_listing,"DECLARE VAR \"%s\" OF TYPE %s\n", root->attr.name, A_semantic_type_to_str(root->semantic_type));
+                  else if (root->array_sz > 0) fprintf(G_listing,"DECLARE ARRAY VAR \"%s\" OF TYPE %s AND SIZE %d\n", root->attr.name, A_semantic_type_to_str(root->semantic_type), root->array_sz); 
                   else fprintf(G_listing, "Array with invalid size");
                   break;
                 case G_FUNC_DCL:
-                  fprintf(G_listing,"DECLARE FUNC \"%s\" OF TYPE %s\n", root->attr.name, semantic_type_to_str(root->semantic_type));
+                  fprintf(G_listing,"DECLARE FUNC \"%s\" OF TYPE %s\n", root->attr.name, A_semantic_type_to_str(root->semantic_type));
                   break;
                 case G_BLOCK:
                   fprintf(G_listing,"BLOCK\n");
@@ -59,8 +58,8 @@ void A_print_tree( G_tree_node * root)
                   fprintf(G_listing,"ASSIGNMENT\n");
                   break;
                 case G_PARAM:
-                  if (root->array_sz == -1) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s\n",root->attr.name, semantic_type_to_str(root->semantic_type));
-                  else if (root->array_sz == 0) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s[]\n",root->attr.name, semantic_type_to_str(root->semantic_type));
+                  if (root->array_sz == -1) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s\n",root->attr.name, A_semantic_type_to_str(root->semantic_type));
+                  else if (root->array_sz == 0) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s[]\n",root->attr.name, A_semantic_type_to_str(root->semantic_type));
                   else 
                   {
                       fprintf(G_listing,"Node corrupted\n");
@@ -131,12 +130,12 @@ void A_print_complete_tree( G_tree_node * root)
             switch (root->node_subtype.stmt) 
             {
                 case G_VAR_DCL:
-                  if (root->array_sz == -1) fprintf(G_listing,"DECLARE VAR \"%s\" OF TYPE %s (scope: %s)\n", root->attr.name, semantic_type_to_str(root->semantic_type), root->scope);
-                  else if (root->array_sz > 0) fprintf(G_listing,"DECLARE ARRAY VAR \"%s\" OF TYPE %s AND SIZE %d (scope: %s)\n", root->attr.name, semantic_type_to_str(root->semantic_type), root->array_sz, root->scope); 
+                  if (root->array_sz == -1) fprintf(G_listing,"DECLARE VAR \"%s\" OF TYPE %s (scope: %s)\n", root->attr.name, A_semantic_type_to_str(root->semantic_type), root->scope);
+                  else if (root->array_sz > 0) fprintf(G_listing,"DECLARE ARRAY VAR \"%s\" OF TYPE %s AND SIZE %d (scope: %s)\n", root->attr.name, A_semantic_type_to_str(root->semantic_type), root->array_sz, root->scope); 
                   else fprintf(G_listing, "Array with invalid size");
                   break;
                 case G_FUNC_DCL:
-                  fprintf(G_listing,"DECLARE FUNC \"%s\" OF TYPE %s (scope: %s)\n", root->attr.name, semantic_type_to_str(root->semantic_type), root->scope);
+                  fprintf(G_listing,"DECLARE FUNC \"%s\" OF TYPE %s (scope: %s)\n", root->attr.name, A_semantic_type_to_str(root->semantic_type), root->scope);
                   break;
                 case G_BLOCK:
                   fprintf(G_listing,"BLOCK (scope: %s)\n", root->scope);
@@ -154,8 +153,8 @@ void A_print_complete_tree( G_tree_node * root)
                   fprintf(G_listing,"ASSIGNMENT\n");
                   break;
                 case G_PARAM:
-                  if (root->array_sz == -1) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s (scope: %s)\n",root->attr.name, semantic_type_to_str(root->semantic_type), root->scope);
-                  else if (root->array_sz == 0) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s[] (scope: %s)\n",root->attr.name, semantic_type_to_str(root->semantic_type), root->scope);
+                  if (root->array_sz == -1) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s (scope: %s)\n",root->attr.name, A_semantic_type_to_str(root->semantic_type), root->scope);
+                  else if (root->array_sz == 0) fprintf(G_listing,"PARAM: \"%s\" OF TYPE %s[] (scope: %s)\n",root->attr.name, A_semantic_type_to_str(root->semantic_type), root->scope);
                   else 
                   {
                       fprintf(G_listing,"Node corrupted\n");
@@ -350,6 +349,22 @@ char *A_int_to_string(int n)
     return result;
 }
 
+char *A_semantic_type_to_str(G_type s_type)
+{
+    switch(s_type)
+    {
+        case G_VOID:
+            return "void";
+            break;
+        case G_INT:
+            return "int";
+            break;
+        default:
+                return "INVALID SEMANTIC TYPE";
+            break;
+    }
+}
+
 //Static function definitions:
 static void print_spaces(void)
 { 
@@ -468,19 +483,4 @@ static char *get_basic_token_str( G_token_type token)
     }
 }
 
-static char *semantic_type_to_str(G_type s_type)
-{
-    switch(s_type)
-    {
-        case G_VOID:
-            return "void";
-            break;
-        case G_INT:
-            return "int";
-            break;
-        default:
-                return "INVALID SEMANTIC TYPE";
-            break;
-    }
-}
 
