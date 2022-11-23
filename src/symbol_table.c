@@ -209,7 +209,7 @@ char *SYM_get_parent_function_id(char *scope)
         exit(EXIT_FAILURE);
     }
     while(scope[++end] != '%');
-    func_name = calloc(end - init + 1, *func_name);
+    func_name = calloc(end - init + 1, sizeof *func_name);
     if(!func_name)
     {
         fprintf(G_listing, "(SYM_get_parent_function_id) Out of memory.");
@@ -219,6 +219,28 @@ char *SYM_get_parent_function_id(char *scope)
     parent_id = SYM_get_function_declaration_id(func_name);
     free(func_name);
     return parent_id;
+}
+
+char *SYM_get_function_parameter_id(char *func_id, int i)
+{
+    row *r = get_row(func_id);
+    if (r->row_type != SYM_FUNC)
+    {
+        fprintf(G_listing, "(SYM_get_function_parameter_id)Invalid function id.");
+        exit(EXIT_FAILURE);
+    }
+    return A_copy_string(r->args_keys[i]);
+}
+
+int SYM_get_num_of_args(char *func_id)
+{
+    row *r = get_row(func_id);
+    if (r->row_type != SYM_FUNC)
+    {
+        fprintf(G_listing, "(SYM_get_function_parameter_id)Invalid function id.");
+        exit(EXIT_FAILURE);
+    }
+    return r->num_of_args;
 }
 
 G_type SYM_get_semantic_type(char *id)

@@ -77,6 +77,11 @@ char *SYM_get_declaration_id(char *name, char *scope, SYM_id_type type);
 //NULL is returned if the scope is global and is not inside any function.
 char *SYM_get_parent_function_id(char *scope);
 
+//get the parameter id from func_id at position i.
+char *SYM_get_function_parameter_id(char *func_id, int i);
+
+int SYM_get_num_of_args(char *func_id);
+
 //Returns the semantic type of the row with a valid id 'id'.
 G_type SYM_get_semantic_type(char *id);
 
