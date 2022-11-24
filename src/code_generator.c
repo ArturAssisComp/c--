@@ -236,9 +236,17 @@ void generate_code(G_tree_node *t)
                         fprintf(G_code, "Bug: function not declared");
                         exit(EXIT_FAILURE);
                     }
-                    tmp1 = A_append("call ", t->attr.name, " "); 
-                    t->var_name = A_append(tmp1, A_int_to_string(SYM_get_num_of_args(tmp)), "");
-                    free(tmp1);
+                    if(SYM_get_semantic_type(tmp) == G_VOID) {
+                        tmp1 = A_append("call ", t->attr.name, " "); 
+                        tmp1 = A_append(tmp1, A_int_to_string(SYM_get_num_of_args(tmp)), "");
+                        t->var_name = tmp1;
+                    }
+                    else {
+                        t->var_name = create_next_aux_variable();
+                        tmp1 = A_append(t->var_name, " = call", " ");
+                        tmp1 = A_append(tmp1, t->attr.name, " ");
+                        tmp1 = A_append(tmp1, A_int_to_string(SYM_get_num_of_args(tmp)), "");
+                    }
                     aux_node = t->child[0];
                     while(aux_node)
                     {
@@ -246,7 +254,8 @@ void generate_code(G_tree_node *t)
                         fprintf(G_code, "param %s\n", aux_node->var_name);
                         aux_node = aux_node->sibling;
                     }
-                    if(SYM_get_semantic_type(tmp) == G_VOID) fprintf(G_code, "%s\n", t->var_name);
+                    fprintf(G_code, "%s\n", tmp1);
+                    free(tmp1);
                     free(tmp);
                     break;
                 case G_CONST:
